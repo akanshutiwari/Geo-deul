@@ -5,6 +5,7 @@ import type { GeoClient } from "../lib/geoClient";
 import { NETWORK_LABEL } from "../lib/config";
 import { playerAvatar, playerName } from "../lib/identity";
 import { shortKey } from "../lib/wallet";
+import WalletPicker from "./WalletPicker";
 
 export default function TopBar({
   client,
@@ -23,6 +24,7 @@ export default function TopBar({
   const [open, setOpen] = useState(false);
   const [gas, setGas] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [picker, setPicker] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +59,12 @@ export default function TopBar({
       <button className="nav-link" onClick={onHowTo}>
         How to play
       </button>
+      {!client && (
+        <button className="btn btn-primary btn-sm" onClick={() => setPicker(true)}>
+          Connect wallet
+        </button>
+      )}
+      {picker && <WalletPicker onClose={() => setPicker(false)} />}
       {client && (
         <div className="wallet-menu" ref={root}>
           <button className="wallet-chip" onClick={() => setOpen((o) => !o)}>

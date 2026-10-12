@@ -1,53 +1,21 @@
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletReadyState } from "@solana/wallet-adapter-base";
+import { useState } from "react";
 import { NETWORK_LABEL } from "../lib/config";
+import WalletPicker from "./WalletPicker";
 
-/** "Sign up to play", Web3 edition: pick a wallet and you're in. */
+/** "Sign up to play", Web3 edition: one button, then pick a wallet. */
 export default function ConnectCard({ title, subtitle }: { title: string; subtitle?: string }) {
-  const { wallets, select, connect, connecting, wallet } = useWallet();
-  const detected = wallets.filter(
-    (w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable,
-  );
-
-  const choose = async (name: (typeof wallets)[number]["adapter"]["name"]) => {
-    select(name);
-    // selecting triggers autoConnect; connect() again is a no-op if already connecting
-    setTimeout(() => connect().catch(() => {}), 50);
-  };
-
+  const [open, setOpen] = useState(false);
   return (
     <div className="connect-card">
       <h2>{title}</h2>
       {subtitle && <p className="connect-sub">{subtitle}</p>}
-      <div className="wallet-list">
-        {detected.map((w) => (
-          <button
-            key={w.adapter.name}
-            className="wallet-option"
-            onClick={() => choose(w.adapter.name)}
-            disabled={connecting}
-          >
-            <img src={w.adapter.icon} alt="" />
-            <span>
-              {connecting && wallet?.adapter.name === w.adapter.name ? "Connecting…" : `Continue with ${w.adapter.name}`}
-            </span>
-          </button>
-        ))}
-        {detected.length === 0 && (
-          <>
-            <p className="connect-sub">No Solana wallet found in this browser.</p>
-            <a className="wallet-option" href="https://phantom.app/download" target="_blank" rel="noreferrer">
-              <span>Get Phantom</span>
-            </a>
-            <a className="wallet-option" href="https://solflare.com/download" target="_blank" rel="noreferrer">
-              <span>Get Solflare</span>
-            </a>
-          </>
-        )}
-      </div>
+      <button className="btn btn-primary btn-lg connect-btn" onClick={() => setOpen(true)}>
+        Connect wallet
+      </button>
       <p className="connect-foot">
         Plays on Solana <strong>{NETWORK_LABEL}</strong>. Your stake leaves your wallet only when you join a duel.
       </p>
+      {open && <WalletPicker onClose={() => setOpen(false)} />}
     </div>
   );
 }
