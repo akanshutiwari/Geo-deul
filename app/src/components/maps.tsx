@@ -4,9 +4,9 @@ import "leaflet/dist/leaflet.css";
 
 const SATELLITE =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const BASEMAP = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const BASEMAP_ATTR =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const BASEMAP =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const BASEMAP_ATTR = "Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors";
 
 export const pinIcon = (color: string, label = "", big = false) =>
   L.divIcon({
@@ -100,7 +100,7 @@ export function GuessMap({
       minZoom: 1,
       worldCopyJump: true,
     });
-    L.tileLayer(BASEMAP, { attribution: BASEMAP_ATTR, subdomains: "abcd", maxZoom: 19 }).addTo(m);
+    L.tileLayer(BASEMAP, { attribution: BASEMAP_ATTR, maxZoom: 19 }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => {
       if (disabledRef.current) return;
       pickRef.current({ lat: e.latlng.lat, lng: L.Util.wrapNum(e.latlng.lng, [-180, 180], true) });
@@ -151,7 +151,7 @@ export function ResultMap({ target, pins }: { target: { lat: number; lng: number
   useEffect(() => {
     if (!el.current) return;
     const m = L.map(el.current, { center: [target.lat, target.lng], zoom: 3, worldCopyJump: true });
-    L.tileLayer(BASEMAP, { attribution: BASEMAP_ATTR, subdomains: "abcd", maxZoom: 19 }).addTo(m);
+    L.tileLayer(BASEMAP, { attribution: BASEMAP_ATTR, maxZoom: 19 }).addTo(m);
     const bounds = L.latLngBounds([[target.lat, target.lng]]);
     const layers: L.Layer[] = [];
     pins.forEach((p, i) => {
