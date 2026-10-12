@@ -36,7 +36,10 @@ const COPY: Record<Step, { text: string; cta?: string; next?: Step }> = {
 };
 
 const randomDrop = () => {
-  const loc = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+  // dev-only: `?practice=Berlin` forces a pool location for testing
+  const forced = import.meta.env.DEV ? new URLSearchParams(window.location.search).get("practice") : null;
+  const match = forced ? LOCATIONS.find((l) => l.name.toLowerCase().includes(forced.toLowerCase())) : undefined;
+  const loc = match ?? LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
   const j = () => (Math.random() - 0.5) * 0.03;
   return { ...loc, lat: loc.lat + j(), lng: loc.lng + j() };
 };
