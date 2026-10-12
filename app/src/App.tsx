@@ -14,6 +14,7 @@ import Hub from "./components/Hub";
 import DuelPage from "./components/DuelPage";
 import TopBar from "./components/TopBar";
 import Tutorial from "./components/Tutorial";
+import SpinningGlobe from "./components/SpinningGlobe";
 
 const TUTORIAL_KEY = "geo-tutorial-done";
 const params = () => new URLSearchParams(window.location.search);
@@ -107,6 +108,14 @@ export default function App() {
   };
 
   if (tutorial) return <Tutorial onDone={finishTutorial} />;
+
+  // dev-only: `?preview=globe` shows the locating animation on its own
+  if (import.meta.env.DEV && params().get("preview") === "globe")
+    return (
+      <div className="center" style={{ display: "grid", placeItems: "center", minHeight: "80vh" }}>
+        <SpinningGlobe size={320} />
+      </div>
+    );
 
   if (!client) {
     return (

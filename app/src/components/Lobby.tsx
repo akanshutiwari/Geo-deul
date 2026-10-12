@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { Duel } from "../hooks/useDuel";
 import PlayerList from "./PlayerList";
+import SpinningGlobe from "./SpinningGlobe";
 
 export default function Lobby({ duel, code, balance }: { duel: Duel; code: string; balance: number | null }) {
   const game = duel.game!;
@@ -35,9 +36,10 @@ export default function Lobby({ duel, code, balance }: { duel: Duel; code: strin
 
         {locating ? (
           <div className="locating">
-            <div className="globe spin" />
-            <p>
-              The VRF oracle is picking the spot. <span className="muted">Nobody knows it yet — not even the host.</span>
+            <SpinningGlobe size={260} />
+            <p className="locating-title">Scanning the planet…</p>
+            <p className="muted small">
+              The VRF oracle is picking your drop. Nobody knows it yet, not even the host.
             </p>
             {duel.isHost && (
               <button className="btn btn-ghost btn-sm" onClick={duel.cancel} disabled={!!duel.busy}>
