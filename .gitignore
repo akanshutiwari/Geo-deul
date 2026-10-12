@@ -1,6 +1,6 @@
 .DS_Store
 **/target/*
-!target/deploy/
+target/deploy/*-keypair.json
 target/deploy/*.so
 **/node_modules
 **/test-ledger
