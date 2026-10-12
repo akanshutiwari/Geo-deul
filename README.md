@@ -19,6 +19,22 @@ Program (devnet): `2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et`
 | Timer + reveal in real time | Guessing runs on the rollup. `reveal_and_settle` fires the moment the last pin lands (or the timer expires), scores everyone with an on-chain haversine, and commits the game back to Solana in the same instruction. |
 | Stakes escrowed, winner paid instantly | Stakes go to a system-owned vault PDA that is never delegated. `payout` runs automatically as soon as the commit lands. It is permissionless and idempotent, and funds can only go to recorded players. |
 
+### Scoring
+
+Each guess scores `distance points + speed bonus`, computed on-chain at reveal:
+
+- **Distance points (priority):** `5000 · e^(−d / 1492.7 km)`, which is GeoGuessr's curve.
+- **Speed bonus:** `500 · accuracy · (seconds left / round length)`, where accuracy is the same `e^(−d/…)` factor. A fast blind guess earns about nothing; a fast *good* guess beats a slow guess at a similar distance.
+
+The top score takes the pot. A tie on score goes to the closer guess, and an exact tie splits the pot.
+
+### Clues
+
+- **Hidden 🔍 signs:** real, named things around the drop (shops, schools, street names, places of worship…), taken from OpenStreetMap via Photon in the local language and script. You find them by panning the Satellite or Streets view and clicking the markers.
+- **Clue panel:** local time and UTC offset, live weather (Open-Meteo), driving side, which script the signs you've found are written in, and nearby places of worship.
+- **Photos:** pictures taken near the spot (Wikimedia Commons).
+- Anything containing the place or country name is filtered out.
+
 ### What's different from GeoGuessr-style duels
 
 - **N-player pot**, not just 1v1. Up to 10 players per lobby, and it's winner-takes-all (ties split).
@@ -26,6 +42,7 @@ Program (devnet): `2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et`
 - **Satellite drop, no API keys**: Esri World Imagery, with zoom and panning limited to a small box so you can't just zoom out to the coastline. Street View shows up as an extra tab if you set `VITE_GOOGLE_MAPS_KEY`.
 - **Self-driving rounds**: every client runs whichever permissionless step comes next (delegate, publish, reveal, pay). The game finishes even if the host closes the tab.
 - **Play from your own wallet**: connect Phantom, Solflare, Backpack, or any Wallet Standard wallet. Your stake leaves your wallet and winnings land back in it. You only approve three things: create/join, start, and lock in. Everything else (sealing your slot, moving the round to the rollup, reveal, payout) is signed by a small per-wallet session key ("game gas"). Your join transaction tops it up automatically, and you can send it back from the wallet menu.
+- **Hunt music**: an exploration soundtrack synthesized live with Web Audio. It speeds up in the last 15 seconds and can be muted.
 - **First-time guide**: a practice round coached by Atlas walks new players through the drop, the pin, the lock-in, and scoring. No stake is involved.
 
 ## Lifecycle

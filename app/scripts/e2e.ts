@@ -150,8 +150,10 @@ async function main() {
     90_000,
   );
   game.players.forEach((p, i) =>
-    log(`  player ${i} ${p.player.toBase58().slice(0, 6)} guessed=${p.guessed} dist=${(p.distanceM / 1000).toFixed(1)} km${game!.winnerMask & (1 << i) ? "  🏆" : ""}`),
+    log(`  player ${i} ${p.player.toBase58().slice(0, 6)} guessed=${p.guessed} dist=${(p.distanceM / 1000).toFixed(1)} km score=${p.score}${game!.winnerMask & (1 << i) ? "  🏆" : ""}`),
   );
+  const top = Math.max(...game.players.map((p) => p.score));
+  assert(game.players[1].score === top && top > 5000, "winner has the top score (distance + speed bonus)");
   assert(game.winnerMask === 0b010, "alice (index 1) wins");
 
   const paySig = await host.payout(gameId, players.map((p) => p.publicKey));
