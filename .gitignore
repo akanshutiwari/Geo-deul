@@ -6,6 +6,7 @@ target/deploy/*.so
 **/test-ledger
 **/.anchor
 **/.env
+**/.env.local
 **/dist
 magicblock-test-storage
 *.log
