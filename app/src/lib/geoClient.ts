@@ -55,6 +55,7 @@ export type PhaseName =
 
 export interface PlayerSlot {
   player: PublicKey;
+  locked: boolean;
   guessed: boolean;
   lat: number;
   lng: number;

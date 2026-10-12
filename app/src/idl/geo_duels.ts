@@ -1071,7 +1071,9 @@ export type GeoDuels = {
     {
       "name": "submitGuess",
       "docs": [
-        "ER: lock in a sealed guess (micro-degrees). One shot, before the deadline."
+        "ER: lock in a sealed guess (micro-degrees). One shot, before the deadline.",
+        "The coordinates go only into the private Guess PDA; the public game just",
+        "learns *that* this player locked in (for live lock-in badges)."
       ],
       "discriminator": [
         61,
@@ -1086,6 +1088,7 @@ export type GeoDuels = {
       "accounts": [
         {
           "name": "game",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1263,6 +1266,11 @@ export type GeoDuels = {
       "code": 6014,
       "name": "mathOverflow",
       "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6015,
+      "name": "notAPlayer",
+      "msg": "Not a player in this game"
     }
   ],
   "types": [
@@ -1465,7 +1473,17 @@ export type GeoDuels = {
             "type": "pubkey"
           },
           {
+            "name": "locked",
+            "docs": [
+              "Locked in a sealed guess (public during the round; reveals nothing else)."
+            ],
+            "type": "bool"
+          },
+          {
             "name": "guessed",
+            "docs": [
+              "Guess revealed and scored (set by `reveal_and_settle`)."
+            ],
             "type": "bool"
           },
           {

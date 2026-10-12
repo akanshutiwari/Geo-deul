@@ -304,8 +304,10 @@ pub mod geo_duels {
     // ───────────────────────────── ER: the round ─────────────────────────────
 
     /// ER: lock in a sealed guess (micro-degrees). One shot, before the deadline.
+    /// The coordinates go only into the private Guess PDA; the public game just
+    /// learns *that* this player locked in (for live lock-in badges).
     pub fn submit_guess(ctx: Context<SubmitGuess>, _game_id: u64, lat: i32, lng: i32) -> Result<()> {
-        let game = &ctx.accounts.game;
+        let game = &mut ctx.accounts.game;
         let now = Clock::get()?.unix_timestamp;
         require!(game.phase == Phase::Guessing, GeoError::WrongPhase);
         require!(now <= game.deadline, GeoError::TimeUp);
@@ -319,6 +321,12 @@ pub mod geo_duels {
         guess.lng = lng;
         guess.submitted = true;
         guess.submitted_at = now;
+        let slot = game
+            .players
+            .iter_mut()
+            .find(|p| p.player == guess.player)
+            .ok_or(GeoError::NotAPlayer)?;
+        slot.locked = true;
         msg!("Sealed guess locked in for geo duel {}", game.game_id);
         Ok(())
     }
@@ -551,7 +559,7 @@ pub struct InitPermission<'info> {
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct SubmitGuess<'info> {
-    #[account(seeds = [GAME_SEED, &game_id.to_le_bytes()], bump)]
+    #[account(mut, seeds = [GAME_SEED, &game_id.to_le_bytes()], bump)]
     pub game: Account<'info, Game>,
     #[account(mut, seeds = [GUESS_SEED, &game_id.to_le_bytes(), player.key().as_ref()], bump)]
     pub guess: Account<'info, Guess>,
@@ -628,6 +636,9 @@ impl Game {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct PlayerSlot {
     pub player: Pubkey,
+    /// Locked in a sealed guess (public during the round; reveals nothing else).
+    pub locked: bool,
+    /// Guess revealed and scored (set by `reveal_and_settle`).
     pub guessed: bool,
     pub lat: i32,
     pub lng: i32,
@@ -635,10 +646,11 @@ pub struct PlayerSlot {
     pub guessed_at: i64,
 }
 impl PlayerSlot {
-    pub const LEN: usize = 32 + 1 + 4 + 4 + 4 + 8;
+    pub const LEN: usize = 32 + 1 + 1 + 4 + 4 + 4 + 8;
     fn new(player: Pubkey) -> Self {
         Self {
             player,
+            locked: false,
             guessed: false,
             lat: 0,
             lng: 0,
@@ -711,6 +723,8 @@ pub enum GeoError {
     AlreadyPaid,
     #[msg("Arithmetic overflow")]
     MathOverflow,
+    #[msg("Not a player in this game")]
+    NotAPlayer,
 }
 
 // ───────────────────────────── helpers ─────────────────────────────

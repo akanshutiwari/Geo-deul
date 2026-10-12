@@ -123,6 +123,12 @@ async function main() {
   assert(!peek || !peek.submitted, "bob cannot read alice's sealed guess");
   log("privacy ok — bob sees:", peek ? "redacted/empty account" : "nothing");
 
+  // Lock-in badges are public, coordinates are not
+  const bobView = await bob.fetchGameEr(gameId);
+  assert(bobView?.players[1].locked, "bob sees alice locked in");
+  assert(bobView?.players[1].lat === 0 && !bobView.players[1].guessed, "but not where");
+  log("lock-in visible, coordinates hidden");
+
   // Releasing a guess mid-round would leak it — must fail
   const early = await alice.releaseGuess(gameId, alice.publicKey).then(() => "ok", () => "failed");
   assert(early === "failed", "guess release blocked before reveal");
