@@ -1,0 +1,13 @@
+.DS_Store
+**/target/*
+!target/deploy/
+target/deploy/*.so
+**/node_modules
+**/test-ledger
+**/.anchor
+**/.env
+**/dist
+magicblock-test-storage
+*.log
+app/src/idl/*.ts.bak
+test-ledger
