@@ -58,7 +58,7 @@ export default function DuelPage({
           {duel.error}
         </div>
       )}
-      <ActivityLog log={duel.log} client={client} />
+      <ActivityLog log={duel.log} client={client} open={duel.phase === "revealed" || duel.phase === "settled"} />
     </div>
   );
 }

@@ -2190,3 +2190,20 @@ iframe.map {
   margin: 1rem 0 0;
   text-align: center;
 }
+.activity li.proof {
+  background: rgba(184, 255, 79, 0.06);
+  border-radius: 8px;
+  padding: 0.2rem 0.4rem;
+}
+.layer {
+  white-space: nowrap;
+}
+.layer.base {
+  background: rgba(107, 197, 255, 0.14);
+  color: #9fd6ff;
+}
+.activity-note {
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.6rem;
+}

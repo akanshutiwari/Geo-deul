@@ -14,6 +14,8 @@ export interface LogEntry {
   text: string;
   sig?: string;
   layer?: "base" | "er";
+  /** public, third-party proof (MagicBlock validator / VRF oracle) */
+  proof?: boolean;
 }
 
 interface MyGuess {
@@ -72,8 +74,8 @@ export function useDuel(client: GeoClient, gameId: BN) {
   const firstSeen = useRef<Record<string, number>>({});
   const lastGame = useRef<GameAccount | null>(null);
 
-  const push = useCallback((text: string, sig?: string, layer?: "base" | "er") => {
-    setLog((l) => [{ at: Date.now(), text, sig, layer }, ...l].slice(0, 40));
+  const push = useCallback((text: string, sig?: string, layer?: "base" | "er", proof?: boolean) => {
+    setLog((l) => (sig && l.some((e) => e.sig === sig) ? l : [{ at: Date.now(), text, sig, layer, proof }, ...l].slice(0, 40)));
   }, []);
 
   const refresh = useCallback(async () => {
@@ -191,6 +193,20 @@ export function useDuel(client: GeoClient, gameId: BN) {
           4000,
         );
       }
+    }
+
+    if ((phase === "revealed" || phase === "settled") && !delegated) {
+      // public proof that the round ran on the MagicBlock rollup
+      once(
+        "proof",
+        async () => {
+          const { commit, vrf } = await client.rollupProof(gameId);
+          if (vrf) push("MagicBlock VRF oracle delivered the random drop location", vrf, "base", true);
+          if (commit) push("MagicBlock ER validator committed the scored round back to Solana", commit, "base", true);
+          if (!commit) throw new Error("commit not indexed yet");
+        },
+        5000,
+      );
     }
 
     if ((phase === "revealed" || phase === "settled") && joined && storage.get(sealedKey)) {
