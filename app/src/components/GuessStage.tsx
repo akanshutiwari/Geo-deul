@@ -6,8 +6,10 @@ import { huntMusic, musicMuted, setMusicMuted } from "../lib/music";
 import CluePanel from "./CluePanel";
 import { DropView, GuessMap } from "./maps";
 import PhotoView from "./PhotoView";
+import StreetView from "./StreetView";
+import { streetPicsNear } from "../lib/streetview";
 
-type View = "satellite" | "streets" | "photos" | "street-view";
+type View = "street" | "satellite" | "streets" | "photos" | "street-view";
 
 export interface StageProps {
   target: { lat: number; lng: number };
@@ -36,7 +38,28 @@ export interface StageProps {
  * corner grows when you hover or tap it so you can drop your pin.
  */
 export default function GuessStage(p: StageProps) {
-  const [view, setView] = useState<View>("satellite");
+  const [view, setViewRaw] = useState<View>("satellite");
+  const [picked, setPicked] = useState(false);
+  const [streetCount, setStreetCount] = useState<number | null>(null);
+  const setView = (v: View | ((v: View) => View)) => {
+    setPicked(true);
+    setViewRaw(v);
+  };
+
+  // open in street view (like GeoGuessr) whenever there's imagery at the drop
+  useEffect(() => {
+    let alive = true;
+    setStreetCount(null);
+    streetPicsNear(p.target.lat, p.target.lng).then((list) => {
+      if (!alive) return;
+      setStreetCount(list.length);
+      if (list.length && !picked) setViewRaw("street");
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.target.lat, p.target.lng]);
   const [photos, setPhotos] = useState<PlacePhoto[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
   const [big, setBig] = useState(false);
@@ -81,15 +104,17 @@ export default function GuessStage(p: StageProps) {
 
   const expanded = big || stick || p.spot === "map";
   const tabs: { id: View; label: string }[] = [
+    ...(streetCount ? [{ id: "street" as View, label: "🚶 Street" }] : []),
     { id: "satellite", label: "🛰 Satellite" },
     { id: "streets", label: "🛣 Streets" },
     { id: "photos", label: `📷 Photos${photosLoading ? "" : ` (${photos.length})`}` },
-    ...(GOOGLE_MAPS_KEY ? [{ id: "street-view" as View, label: "🚶 Street View" }] : []),
+    ...(GOOGLE_MAPS_KEY ? [{ id: "street-view" as View, label: "Google Street View" }] : []),
   ];
 
   return (
     <div className="stage">
       <div className="stage-view">
+        {view === "street" && <StreetView lat={p.target.lat} lng={p.target.lng} />}
         {view === "satellite" && (
           <DropView lat={p.target.lat} lng={p.target.lng} className="stage-map" signs={clues?.signs} found={found} onFind={find} />
         )}

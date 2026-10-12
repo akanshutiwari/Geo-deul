@@ -574,6 +574,13 @@
     hash.js "^1.1.7"
     node-fetch "^2.7.0"
 
+"@photo-sphere-viewer/core@^5.15.1":
+  version "5.15.1"
+  resolved "https://registry.yarnpkg.com/@photo-sphere-viewer/core/-/core-5.15.1.tgz#f717fc5d9660bae56591cff76ddedc2f95fc5770"
+  integrity sha512-nhJviczUB1xiAT/I7mGba9iDIw7DvsiK34hbR9t7kIrg9MySG33uA+a4QUk2dEOP5PjcKMj58wod8I/dQ7ePiw==
+  dependencies:
+    three "^0.185.1"
+
 "@react-native-async-storage/async-storage@^1.17.7":
   version "1.24.0"
   resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-1.24.0.tgz#888efbc62a26f7d9464b32f4d3027b7f2771999b"
@@ -2419,6 +2426,16 @@ text-encoding-utf-8@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/text-encoding-utf-8/-/text-encoding-utf-8-1.0.2.tgz#585b62197b0ae437e3c7b5d0af27ac1021e10d13"
   integrity sha512-8bw4MY9WjdsD2aMtO0OzOCY3pXGYNx2d2FfHRVUKkiCPDWjKuOlhLVASS+pD7VkLTVjW268LYJHwsnPFlBpbAg==
+
+three@^0.185.1:
+  version "0.185.1"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.185.1.tgz#63e9e241a17b101e211965121a017b4b4d8054ae"
+  integrity sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==
+
+three@^0.186.1:
+  version "0.186.1"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.186.1.tgz#6d50f70c2c437f844179bbb56d6f5b774e1ca38a"
+  integrity sha512-blFeqb49wRCSGUGj7gtpfnSGHy2lwDk94RhUmS1c/hTby70kvChbWpkJ4Pm1390LqzzvTmzgXKHPEafJwCb8jA==
 
 tinyglobby@^0.2.13:
   version "0.2.17"

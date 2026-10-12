@@ -1838,3 +1838,147 @@ iframe.map {
   margin: 0;
   animation: pulse 1.6s ease-in-out infinite;
 }
+
+/* ═════════════ street view ═════════════ */
+.street-view {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+.street-canvas {
+  position: absolute;
+  inset: 0;
+}
+.street-canvas .psv-loader-container {
+  display: none;
+}
+.walk-pad {
+  position: absolute;
+  z-index: 520;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.walk-btn {
+  width: 64px;
+  height: 44px;
+  border-radius: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: rgba(7, 11, 18, 0.55);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  transition:
+    transform 0.1s,
+    background 0.15s;
+}
+.walk-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  transform: scale(1.06);
+}
+.walk-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.street-jump {
+  position: absolute;
+  z-index: 520;
+  left: 66px;
+  bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(7, 11, 18, 0.8);
+  color: var(--text);
+  font: 600 0.85rem var(--font);
+  padding: 0.55rem 0.9rem;
+  border-radius: 99px;
+  cursor: pointer;
+}
+.street-jump:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.street-meta {
+  position: absolute;
+  z-index: 510;
+  left: 50%;
+  bottom: 140px;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.2rem 0.7rem;
+  border-radius: 99px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.street-loading {
+  position: absolute;
+  z-index: 515;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(7, 11, 18, 0.75);
+  padding: 0.6rem 1.1rem;
+  border-radius: 99px;
+  font-weight: 600;
+  animation: pulse 1s ease-in-out infinite;
+}
+.street-credit {
+  position: absolute;
+  z-index: 510;
+  right: 330px;
+  bottom: 6px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+}
+/* GeoGuessr-style compass strip */
+.compass {
+  position: absolute;
+  z-index: 520;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 30px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(7, 11, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+.compass-strip {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+}
+.compass-strip span {
+  flex: none;
+  width: 90px;
+  text-align: center;
+  font: 600 0.72rem var(--mono);
+  color: var(--muted);
+}
+.compass-strip span.major {
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.compass-needle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+}
