@@ -241,9 +241,57 @@ export class GeoClient {
     return conn;
   }
 
-  /** Tokenized TEE RPC URL (for explorer links to ER transactions). */
-  async erExplorerRpc(): Promise<string> {
-    return (await this.teeConn("session")).rpcEndpoint;
+  /**
+   * Tokenized TEE RPC URL for explorer links to ER transactions. With the
+   * session token, transactions touching a sealed guess are redacted; the
+   * wallet token (one signMessage) lets the player see their own in full.
+   */
+  async erExplorerRpc(as: Actor = "session"): Promise<string> {
+    return (await this.teeConn(as)).rpcEndpoint;
+  }
+
+  /** Whether this player's wallet already has a TEE token cached (no popup needed). */
+  hasWalletTeeToken(): boolean {
+    const raw = this.cache?.get(`geo-tee-${this.cfg.teeEndpoint}-${this.wallet.publicKey.toBase58()}`);
+    if (!raw) return false;
+    try {
+      const a = JSON.parse(raw) as { expiresAt: number };
+      const exp = a.expiresAt > 1e12 ? a.expiresAt : a.expiresAt * 1000;
+      return exp - Date.now() > 60_000;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Public, base-layer proof of the rollup: the transactions in which the
+   * MagicBlock ER validator committed this game back to Solana through the
+   * Delegation Program, and the VRF oracle fulfilled the location request.
+   */
+  async rollupProof(gameId: BN): Promise<{ commit: string | null; vrf: string | null }> {
+    const DELEGATION = "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh";
+    const VRF = "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz";
+    const sigs = await this.base.getSignaturesForAddress(this.gamePda(gameId), { limit: 25 });
+    const txs = await Promise.all(
+      sigs.map((s) =>
+        this.base
+          .getTransaction(s.signature, { maxSupportedTransactionVersion: 0 })
+          .then((t) => ({ sig: s.signature, t }))
+          .catch(() => ({ sig: s.signature, t: null })),
+      ),
+    );
+    let commit: string | null = null;
+    let vrf: string | null = null;
+    for (const { sig, t } of txs) {
+      if (!t || t.meta?.err) continue;
+      const keys = t.transaction.message.staticAccountKeys.map((k) => k.toBase58());
+      const signer = keys[0];
+      // newest first: keep the latest commit by the ER validator
+      if (!commit && keys.includes(DELEGATION) && signer === this.cfg.validator.toBase58()) commit = sig;
+      if (!vrf && keys.includes(VRF) && signer !== this.publicKey.toBase58() && signer !== this.session.publicKey.toBase58())
+        vrf = sig;
+    }
+    return { commit, vrf };
   }
 
   // ───────────── tx helpers ─────────────
