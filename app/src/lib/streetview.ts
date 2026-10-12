@@ -8,8 +8,10 @@ const API = "https://api.panoramax.xyz/api";
 export interface StreetPic {
   id: string;
   collection: string;
-  /** image URL (HD for 360°, SD for flat to stay snappy) */
+  /** fast-loading image (~2k px) */
   src: string;
+  /** full-quality image, swapped in once you stop to look */
+  hd: string;
   /** horizontal field of view of the camera; 360 = full panorama */
   fov: number;
   /** compass heading the camera faced (degrees), if known */
@@ -38,7 +40,8 @@ const toPic = (f: Feature): StreetPic => {
   return {
     id: f.id,
     collection: f.collection,
-    src: (fov >= 360 ? f.assets.hd?.href : f.assets.sd?.href) ?? f.assets.hd?.href ?? f.assets.thumb.href,
+    src: f.assets.sd?.href ?? f.assets.hd?.href ?? f.assets.thumb.href,
+    hd: f.assets.hd?.href ?? f.assets.sd?.href ?? f.assets.thumb.href,
     fov,
     heading: typeof f.properties["view:azimuth"] === "number" ? (f.properties["view:azimuth"] as number) : null,
     lat: f.geometry.coordinates[1],
@@ -101,4 +104,35 @@ export const streetPic = (collection: string, id: string): Promise<StreetPic | n
     picCache.set(id, p);
   }
   return p;
+};
+
+const localCache = new Map<string, Promise<StreetPic[]>>();
+
+/**
+ * Dense lookup of pictures within ~250 m — the "street graph" around where
+ * you're standing, used to draw the walk arrows. Cached per ~100 m cell.
+ */
+export const streetPicsAround = (lat: number, lng: number): Promise<StreetPic[]> => {
+  const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+  let p = localCache.get(key);
+  if (!p) {
+    const d = 0.0025;
+    p = fetch(`${API}/search?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&limit=100`)
+      .then((r) => r.json())
+      .then((data) => ((data?.features ?? []) as Feature[]).filter((f) => f.assets?.sd || f.assets?.hd).map(toPic))
+      .catch(() => []);
+    localCache.set(key, p);
+  }
+  return p;
+};
+
+const preloaded = new Set<string>();
+/** warm the browser cache so stepping onto this picture is instant */
+export const preloadImage = (url: string) => {
+  if (preloaded.has(url)) return;
+  preloaded.add(url);
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.decoding = "async";
+  img.src = url;
 };
