@@ -2,13 +2,26 @@
 
 **Dropped somewhere on Earth. Closest pin takes the pot.**
 
-Any number of players (1–10) get dropped at the same VRF-picked spot, study a
-label-free satellite view, and drop a sealed pin on the world map before the
-clock runs out. Guesses stay hidden inside a MagicBlock **Private Ephemeral
-Rollup** (TEE) until everyone has locked in. Then the round reveals in real
-time and the on-chain escrow pays whoever landed closest. Tied guesses split the pot.
+Between 1 and 10 players get dropped at the same VRF-picked spot. They walk the
+streets in 360° street-level imagery, study satellite views and hunt for clues,
+then drop a sealed pin before the clock runs out. Guesses stay hidden inside a
+MagicBlock **Private Ephemeral Rollup** (TEE) until everyone has locked in. The
+round then reveals in real time, and the on-chain escrow pays the top score
+(distance first, plus a speed bonus). Ties split the pot.
 
-Program (devnet): `2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et`
+## Deployment
+
+| | |
+| --- | --- |
+| **Program ID** | `2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et` |
+| **Network** | Solana devnet + MagicBlock devnet TEE (`devnet-tee.magicblock.app`) |
+| **Explorer** | [View program on Solana Explorer](https://explorer.solana.com/address/2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et?cluster=devnet) |
+| **Live app** | [geo-guess-two-rouge.vercel.app](https://geo-guess-two-rouge.vercel.app) |
+| **ER validator** | `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (TEE) |
+| **VRF queue** | `Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh` |
+
+Rollup (ER) transactions from a round are linked in the in-game "On-chain
+activity" panel. They open on Solscan against the TEE endpoint.
 
 ## How it maps to MagicBlock
 
