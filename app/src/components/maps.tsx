@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { imageryMaxZoom } from "../lib/imagery";
 
 const SATELLITE =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
@@ -24,46 +25,75 @@ export const targetIcon = () =>
     iconAnchor: [12, 34],
   });
 
+const STREETS_NO_LABELS =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+
 /**
- * The "drop": label-free satellite imagery around the VRF-picked spot. Zoom
- * and panning are clamped to a small box so the coastline-from-space trick
- * doesn't give the answer away.
+ * The "drop": label-free imagery around the VRF-picked spot — satellite, or
+ * the bare street grid. Zoom adapts to how deep real imagery goes at this spot
+ * (no grey "data not available" tiles), and panning is clamped to a box so
+ * you can't just zoom out to the coastline.
  */
-export function SatelliteView({ lat, lng }: { lat: number; lng: number }) {
+export function DropView({
+  lat,
+  lng,
+  mode = "satellite",
+  className = "map",
+}: {
+  lat: number;
+  lng: number;
+  mode?: "satellite" | "streets";
+  className?: string;
+}) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
+  const home = useRef<{ zoom: number }>({ zoom: 16 });
 
   useEffect(() => {
     if (!el.current) return;
-    const box = 0.06;
-    const m = L.map(el.current, {
-      center: [lat, lng],
-      zoom: 16,
-      minZoom: 14,
-      maxZoom: 19,
-      zoomControl: true,
-      attributionControl: true,
-      maxBounds: L.latLngBounds([lat - box, lng - box], [lat + box, lng + box]),
-      maxBoundsViscosity: 1,
-    });
-    L.tileLayer(SATELLITE, {
-      maxNativeZoom: 18,
-      maxZoom: 19,
-      attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
-    }).addTo(m);
-    map.current = m;
+    let cancelled = false;
+    let m: L.Map | null = null;
+    let ro: ResizeObserver | null = null;
+    const node = el.current;
+    (async () => {
+      const maxZ = mode === "streets" ? 16 : await imageryMaxZoom(lat, lng);
+      if (cancelled) return;
+      const zoom = Math.min(16, maxZ);
+      // shallower imagery ⇒ show a wider box so there's still something to read
+      const box = Math.min(0.6, 0.05 * 2 ** (16 - zoom));
+      home.current.zoom = zoom;
+      m = L.map(node, {
+        center: [lat, lng],
+        zoom,
+        minZoom: zoom - 2,
+        maxZoom: Math.min(19, maxZ + 1),
+        zoomControl: true,
+        maxBounds: L.latLngBounds([lat - box, lng - box], [lat + box, lng + box]),
+        maxBoundsViscosity: 1,
+      });
+      L.tileLayer(mode === "streets" ? STREETS_NO_LABELS : SATELLITE, {
+        maxNativeZoom: maxZ,
+        maxZoom: 19,
+        attribution: mode === "streets" ? "Tiles &copy; Esri" : "Imagery &copy; Esri, Maxar, Earthstar Geographics",
+      }).addTo(m);
+      map.current = m;
+      ro = new ResizeObserver(() => m?.invalidateSize());
+      ro.observe(node);
+    })();
     return () => {
-      m.remove();
+      cancelled = true;
+      ro?.disconnect();
+      m?.remove();
       map.current = null;
     };
-  }, [lat, lng]);
+  }, [lat, lng, mode]);
 
   return (
     <div className="map-shell">
-      <div ref={el} className="map" />
+      <div ref={el} className={className} />
       <button
         className="map-recenter"
-        onClick={() => map.current?.setView([lat, lng], 16)}
+        onClick={() => map.current?.setView([lat, lng], home.current.zoom)}
         title="Back to the drop point"
       >
         ⌖ Recenter
@@ -72,17 +102,22 @@ export function SatelliteView({ lat, lng }: { lat: number; lng: number }) {
   );
 }
 
+/** Back-compat name used by older screens. */
+export const SatelliteView = DropView;
+
 /** World map to drop your pin on. */
 export function GuessMap({
   value,
   onPick,
   color,
   disabled,
+  className = "map guess-map",
 }: {
   value: { lat: number; lng: number } | null;
   onPick: (p: { lat: number; lng: number }) => void;
   color: string;
   disabled?: boolean;
+  className?: string;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -132,7 +167,7 @@ export function GuessMap({
   return (
     // the locked state lives on the wrapper: Leaflet owns the map div's classes
     <div className={`map-shell${disabled ? " is-locked" : ""}`}>
-      <div ref={el} className="map guess-map" />
+      <div ref={el} className={className} />
     </div>
   );
 }
@@ -177,8 +212,13 @@ export function ResultMap({ target, pins }: { target: { lat: number; lng: number
       }, 500 + i * 450);
     });
     L.marker([target.lat, target.lng], { icon: targetIcon(), zIndexOffset: 1000 }).addTo(m);
-    m.fitBounds(bounds.pad(0.25), { maxZoom: 8 });
-    const ro = new ResizeObserver(() => m.invalidateSize());
+    const fit = () => m.fitBounds(bounds.pad(0.25), { maxZoom: 8, animate: false });
+    fit();
+    // the panel often settles its size after mount — re-measure and re-fit
+    const ro = new ResizeObserver(() => {
+      m.invalidateSize();
+      fit();
+    });
     ro.observe(el.current);
     return () => {
       ro.disconnect();
