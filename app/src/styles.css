@@ -1908,7 +1908,8 @@ iframe.map {
   position: absolute;
   z-index: 510;
   left: 50%;
-  bottom: 140px;
+  bottom: auto;
+  top: 116px;
   transform: translateX(-50%);
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.85);
@@ -1981,4 +1982,86 @@ iframe.map {
   width: 2px;
   margin-left: -1px;
   background: var(--accent);
+}
+
+/* road chevrons: a ring laid flat on the ground in perspective */
+.ground {
+  position: absolute;
+  z-index: 515;
+  left: 50%;
+  bottom: 0;
+  width: 320px;
+  height: 320px;
+  margin-left: -160px;
+  transform: perspective(700px) rotateX(55deg);
+  transform-origin: 50% 85%;
+  pointer-events: none;
+}
+.ground-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0 13%, rgba(255, 255, 255, 0.05) 14% 36%, transparent 37%);
+}
+.chevron {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78px;
+  height: 78px;
+  margin: -39px 0 0 -39px;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transform-origin: 50% 50%;
+}
+.chevron svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.55));
+  transition: transform 0.12s;
+}
+.chevron path {
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  transition: fill 0.12s;
+}
+.chevron.ahead path {
+  fill: var(--accent);
+}
+.chevron:hover path {
+  fill: var(--accent);
+}
+.chevron:hover svg {
+  transform: scale(1.15);
+}
+.turn-pad {
+  position: absolute;
+  z-index: 516;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 230px;
+  pointer-events: none;
+}
+.turn-pad .walk-btn {
+  pointer-events: auto;
+}
+.walk-btn.sm {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+}
+.street-loading.sm {
+  top: auto;
+  bottom: 160px;
+  padding: 0.2rem 0.8rem;
+  font-size: 1.2rem;
 }
