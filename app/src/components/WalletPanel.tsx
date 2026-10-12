@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
@@ -28,6 +28,19 @@ export default function WalletPanel({
   const [amount, setAmount] = useState(0.1);
   const conn = useMemo(() => new Connection(BASE_ENDPOINT, "confirmed"), []);
   const address = client.publicKey.toBase58();
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!compact || !open) return;
+    const close = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      // the wallet-adapter modal renders outside this panel
+      if (root.current?.contains(t) || t.closest(".wallet-adapter-modal")) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [compact, open]);
 
   const act = async (label: string, fn: () => Promise<string>) => {
     setBusy(label);
@@ -74,7 +87,7 @@ export default function WalletPanel({
     });
 
   return (
-    <div className={`wallet-panel${compact ? " compact" : ""}`}>
+    <div ref={root} className={`wallet-panel${compact ? " compact" : ""}`}>
       <button className="wallet-chip" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span className="dot" />
         <span className="mono">{shortKey(address)}</span>

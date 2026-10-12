@@ -432,6 +432,9 @@ input[type="range"] {
   background: var(--bg);
   border: 1px solid var(--line);
 }
+.players li {
+  white-space: nowrap;
+}
 .players li.me {
   border-color: rgba(184, 255, 79, 0.45);
 }
