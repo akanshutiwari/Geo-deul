@@ -50,7 +50,7 @@ export default function WalletPanel({
       onChange();
     } catch (e) {
       const t = e instanceof Error ? e.message : String(e);
-      setMsg(/429|rate|limit/i.test(t) ? "Faucet is rate-limited — try faucet.solana.com or top up from a wallet." : t.slice(0, 140));
+      setMsg(/429|rate|limit|airdrop|internal error/i.test(t) ? "The devnet faucet is busy — try faucet.solana.com or top up from a wallet." : t.slice(0, 140));
     }
     setBusy(null);
   };
