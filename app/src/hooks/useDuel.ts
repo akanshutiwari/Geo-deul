@@ -40,6 +40,8 @@ const storage = {
 
 const errText = (e: unknown) => {
   const s = e instanceof Error ? e.message : String(e);
+  if (/reject|denied|cancel/i.test(s)) return "You declined the transaction in your wallet.";
+  if (/insufficient|0x1\b|debit/i.test(s)) return "Not enough SOL in your wallet.";
   const m = s.match(/Error Message: ([^.]+)/) || s.match(/"([A-Z][^"]{8,80})"/);
   return m ? m[1] : s.slice(0, 160);
 };

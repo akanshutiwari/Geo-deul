@@ -48,7 +48,7 @@ export default function Lobby({ duel, code, balance }: { duel: Duel; code: strin
         ) : duel.isHost ? (
           <div className="actions">
             <button className="btn btn-primary btn-lg" onClick={duel.start} disabled={!!duel.busy}>
-              {duel.busy === "Starting" ? "Requesting VRF…" : game.players.length < 2 ? "Start solo practice" : `Drop ${game.players.length} players 🌍`}
+              {duel.busy === "Starting" ? "Confirm in your wallet…" : game.players.length < 2 ? "Start solo practice" : `Drop ${game.players.length} players 🌍`}
             </button>
             <button className="btn btn-ghost" onClick={duel.cancel} disabled={!!duel.busy}>
               Cancel & refund
@@ -61,9 +61,9 @@ export default function Lobby({ duel, code, balance }: { duel: Duel; code: strin
         ) : (
           <div className="actions">
             <button className="btn btn-primary btn-lg" onClick={duel.join} disabled={!!duel.busy || (balance !== null && balance < stake + 0.01)}>
-              {duel.busy === "Joining" ? "Joining…" : stake > 0 ? `Join · stake ${stake} SOL` : "Join free duel"}
+              {duel.busy === "Joining" ? "Confirm in your wallet…" : stake > 0 ? `Join · stake ${stake} SOL` : "Join free duel"}
             </button>
-            {balance !== null && balance < stake + 0.01 && <p className="warn small">Fund your burner first (top right).</p>}
+            {balance !== null && balance < stake + 0.01 && <p className="warn small">Your wallet needs at least {(stake + 0.01).toFixed(3)} SOL to join.</p>}
           </div>
         )}
       </div>

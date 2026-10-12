@@ -82,7 +82,7 @@ export default function Round({ duel }: { duel: Duel }) {
               {locked
                 ? "🔒 Locked in — waiting for the others"
                 : duel.busy === "Locking in"
-                  ? "Sealing…"
+                  ? "Confirm in your wallet…"
                   : timeUp
                     ? "Time's up"
                     : pick
