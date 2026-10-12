@@ -1,28 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LOCATIONS } from "../lib/locations";
-import { PLAYER_COLORS, formatDistance, haversineM, points } from "../lib/geo";
+import { PLAYER_COLORS, formatDistance, haversineM, points, speedBonus } from "../lib/geo";
+import { drivesOnLeft } from "../lib/clues";
 import { ResultMap } from "./maps";
 import GuessStage from "./GuessStage";
 
-type Step = "intro" | "drop" | "pin" | "lock" | "result";
+type Step = "intro" | "drop" | "clues" | "pin" | "lock" | "result";
+const PRACTICE_SECS = 90;
 
-const COPY: Record<Step, { text: string; cta?: string }> = {
+const COPY: Record<Step, { text: string; cta?: string; next?: Step }> = {
   intro: {
     text: "Hey, I'm Atlas! Let's play one practice round so you know exactly how a duel works. Nothing is staked here.",
     cta: "Let's go",
+    next: "drop",
   },
   drop: {
-    text: "This is your drop, filling the whole screen. A VRF oracle picks it, so nobody can know it in advance. Use the tabs up top: Satellite, the bare Streets grid, and Photos people took around here. Hunt for clues like coastlines, road layouts, roofs, signs and vegetation.",
+    text: "This is your drop, filling the whole screen. A VRF oracle picks it, so nobody can know it in advance. Drag around and zoom. The tabs up top switch between Satellite, the bare Streets grid, and Photos people took nearby.",
+    cta: "Next",
+    next: "clues",
+  },
+  clues: {
+    text: "Hunt for clues! The panel shows the local time, weather and which side people drive on. Pan the map to find hidden 🔍 markers. Each one is a real sign from around here, written in the local script.",
     cta: "Got it",
+    next: "pin",
   },
   pin: {
     text: "Think you know where this is? The small map in the corner grows when you hover or tap it. Click it to drop your pin, and click again to move it. ⤢ keeps it big.",
   },
   lock: {
-    text: "Happy with it? Hit Lock in. In a duel your pin is sealed inside a private rollup. Others see that you locked in, never where.",
+    text: "Happy with it? Lock in! Distance matters most, but locking in early earns a speed bonus too. The bonus only counts if your guess is good, so blind fast guesses earn nothing.",
   },
   result: {
-    text: "The closer your pin, the higher your score. In a duel, whoever lands closest takes the whole pot, paid straight to their wallet!",
+    text: "The closer and faster, the higher your score. In a duel the top score takes the whole pot, paid straight to your wallet!",
   },
 };
 
@@ -38,19 +47,54 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
   const [drop, setDrop] = useState(randomDrop);
   const [step, setStep] = useState<Step>("intro");
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [lockedLeft, setLockedLeft] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const dist = pin ? haversineM(drop.lat, drop.lng, pin.lat, pin.lng) : 0;
+  const timeLeft = startedAt ? Math.max(0, PRACTICE_SECS - (now - startedAt) / 1000) : PRACTICE_SECS;
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, []);
+
+  const go = (s: Step) => {
+    if (s === "drop" && !startedAt) setStartedAt(Date.now());
+    setStep(s);
+  };
 
   const again = () => {
     setPin(null);
     setDrop(randomDrop());
     setRound((r) => r + 1);
-    setStep("drop");
+    setStartedAt(Date.now());
+    setStep("pin");
   };
 
   const place = (p: { lat: number; lng: number }) => {
     setPin(p);
     if (step === "pin") setStep("lock");
   };
+
+  const lock = () => {
+    setLockedLeft(timeLeft);
+    setStep("result");
+  };
+
+  const hud = startedAt ? (
+    <div className="hud-top">
+      <div className="timer timer-sm" style={{ ["--p" as string]: timeLeft / PRACTICE_SECS }}>
+        <span className="mono">{Math.ceil(timeLeft)}</span>
+      </div>
+      <div>
+        <div className="mono hud-pot">Practice round</div>
+        <div className="hud-sub">Lock in early for a speed bonus</div>
+      </div>
+    </div>
+  ) : null;
+
+  const dPts = points(dist);
+  const bonus = speedBonus(dist, lockedLeft, PRACTICE_SECS);
 
   return (
     <div className="tutorial">
@@ -75,8 +119,13 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
           canPin={step === "pin" || step === "lock"}
           lockLabel={pin ? "Lock in guess" : "Place your pin on the map"}
           canLock={!!pin && step === "lock"}
-          onLock={() => setStep("result")}
-          spot={step === "drop" ? "views" : step === "pin" ? "map" : step === "lock" ? "lock" : null}
+          onLock={lock}
+          spot={step === "drop" ? "views" : step === "clues" ? "clues" : step === "pin" ? "map" : step === "lock" ? "lock" : null}
+          hide={[drop.name, drop.country]}
+          driveLeft={drivesOnLeft(drop.country, drop.name)}
+          timeLeft={timeLeft}
+          totalTime={PRACTICE_SECS}
+          hud={hud}
         />
       ) : (
         <div className="tut-result">
@@ -97,8 +146,10 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
                 <div className="score-label">from the spot</div>
               </div>
               <div>
-                <div className="score-big accent">{points(dist)}</div>
-                <div className="score-label">of 5,000 points</div>
+                <div className="score-big accent">{(dPts + bonus).toLocaleString()}</div>
+                <div className="score-label">
+                  {dPts} distance + {bonus} speed
+                </div>
               </div>
             </div>
             <div className="row wrap">
@@ -116,8 +167,8 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
       <div className="coach coach-left">
         <div className="coach-bubble">
           <p>{COPY[step].text}</p>
-          {COPY[step].cta && (
-            <button className="btn btn-primary btn-sm" onClick={() => setStep(step === "intro" ? "drop" : "pin")}>
+          {COPY[step].cta && COPY[step].next && (
+            <button className="btn btn-primary btn-sm" onClick={() => go(COPY[step].next!)}>
               {COPY[step].cta}
             </button>
           )}

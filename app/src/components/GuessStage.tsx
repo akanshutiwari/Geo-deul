@@ -1,6 +1,9 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { GOOGLE_MAPS_KEY } from "../lib/config";
 import { PlacePhoto, placePhotos } from "../lib/imagery";
+import { Clues, cluesFor } from "../lib/clues";
+import { huntMusic, musicMuted, setMusicMuted } from "../lib/music";
+import CluePanel from "./CluePanel";
 import { DropView, GuessMap } from "./maps";
 import PhotoView from "./PhotoView";
 
@@ -19,7 +22,13 @@ export interface StageProps {
   /** overlays (timer, players…) drawn on top of the stage */
   hud?: ReactNode;
   /** tutorial spotlight */
-  spot?: "views" | "map" | "lock" | null;
+  spot?: "views" | "map" | "lock" | "clues" | null;
+  /** words that would name the place — filtered out of every clue */
+  hide: string[];
+  driveLeft: boolean;
+  /** for the music's tension */
+  timeLeft?: number;
+  totalTime?: number;
 }
 
 /**
@@ -33,6 +42,34 @@ export default function GuessStage(p: StageProps) {
   const [big, setBig] = useState(false);
   const [stick, setStick] = useState(false);
   const leave = useRef<ReturnType<typeof setTimeout>>();
+  const [clues, setClues] = useState<Clues | null>(null);
+  const [cluesLoading, setCluesLoading] = useState(true);
+  const [found, setFound] = useState<Set<number>>(new Set());
+  const [muted, setMuted] = useState(musicMuted);
+
+  useEffect(() => {
+    setCluesLoading(true);
+    setFound(new Set());
+    cluesFor(p.target.lat, p.target.lng, p.hide).then((c) => {
+      setClues(c);
+      setCluesLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.target.lat, p.target.lng]);
+
+  useEffect(() => {
+    if (muted) huntMusic.stop();
+    else huntMusic.start();
+    return () => huntMusic.stop();
+  }, [muted]);
+
+  useEffect(() => {
+    if (p.timeLeft === undefined || !p.totalTime) return;
+    // calm while exploring, urgent in the last ~15 seconds
+    huntMusic.setIntensity(p.timeLeft < 15 ? 1 - p.timeLeft / 15 + 0.4 : 0);
+  }, [p.timeLeft, p.totalTime]);
+
+  const find = (id: number) => setFound((f) => (f.has(id) ? f : new Set(f).add(id)));
 
   useEffect(() => {
     setPhotosLoading(true);
@@ -53,8 +90,20 @@ export default function GuessStage(p: StageProps) {
   return (
     <div className="stage">
       <div className="stage-view">
-        {view === "satellite" && <DropView lat={p.target.lat} lng={p.target.lng} className="stage-map" />}
-        {view === "streets" && <DropView lat={p.target.lat} lng={p.target.lng} mode="streets" className="stage-map streets" />}
+        {view === "satellite" && (
+          <DropView lat={p.target.lat} lng={p.target.lng} className="stage-map" signs={clues?.signs} found={found} onFind={find} />
+        )}
+        {view === "streets" && (
+          <DropView
+            lat={p.target.lat}
+            lng={p.target.lng}
+            mode="streets"
+            className="stage-map streets"
+            signs={clues?.signs}
+            found={found}
+            onFind={find}
+          />
+        )}
         {view === "photos" && <PhotoView photos={photos} loading={photosLoading} />}
         {view === "street-view" && GOOGLE_MAPS_KEY && (
           <iframe
@@ -73,6 +122,27 @@ export default function GuessStage(p: StageProps) {
           </button>
         ))}
       </div>
+
+      <div className={p.spot === "clues" ? "spot-wrap" : ""}>
+        <CluePanel
+          clues={clues}
+          loading={cluesLoading}
+          found={found}
+          driveLeft={p.driveLeft}
+          onShowSign={() => setView((v) => (v === "photos" ? "satellite" : v))}
+        />
+      </div>
+
+      <button
+        className="music-btn"
+        onClick={() => {
+          setMusicMuted(!muted);
+          setMuted(!muted);
+        }}
+        title={muted ? "Play music" : "Mute music"}
+      >
+        {muted ? "🔇" : "🎵"}
+      </button>
 
       {p.hud}
 

@@ -5,11 +5,14 @@ import { fromMicro } from "../lib/geoClient";
 import { PLAYER_COLORS } from "../lib/geo";
 import { playerAvatar, playerName } from "../lib/identity";
 import GuessStage from "./GuessStage";
+import { LOCATIONS } from "../lib/locations";
+import { drivesOnLeft } from "../lib/clues";
 
 export default function Round({ duel }: { duel: Duel }) {
   const game = duel.game!;
   const [pick, setPick] = useState<{ lat: number; lng: number } | null>(duel.myGuess);
   const target = { lat: fromMicro(game.targetLat), lng: fromMicro(game.targetLng) };
+  const loc = LOCATIONS[game.locationIndex];
   const locked = !!duel.myGuess || (duel.myIndex >= 0 && game.players[duel.myIndex].locked);
   const total = game.guessSecs + 6;
   const pct = Math.max(0, Math.min(1, duel.timeLeft / total));
@@ -77,6 +80,10 @@ export default function Round({ duel }: { duel: Duel }) {
       canLock={duel.joined && !!pick && !locked && !duel.busy && !timeUp}
       onLock={() => pick && duel.submitGuess(pick.lat, pick.lng)}
       hud={hud}
+      hide={[loc.name, loc.country]}
+      driveLeft={drivesOnLeft(loc.country, loc.name)}
+      timeLeft={duel.timeLeft}
+      totalTime={total}
     />
   );
 }

@@ -1351,10 +1351,10 @@ iframe.map {
   filter: contrast(1.05);
 }
 .stage-view .map-recenter {
-  left: 60px;
+  left: 14px;
   right: auto;
-  top: 66px;
-  bottom: auto;
+  top: auto;
+  bottom: 66px;
 }
 
 /* view tabs */
@@ -1655,5 +1655,176 @@ iframe.map {
   }
   .photo-strip {
     right: 200px;
+  }
+}
+
+/* ═════════════ clues + music ═════════════ */
+.clue-panel {
+  position: absolute;
+  z-index: 550;
+  top: 64px;
+  left: 54px;
+  width: 300px;
+  max-height: calc(100% - 150px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(7, 11, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+.clue-panel.closed {
+  width: auto;
+}
+.spot-wrap .clue-panel {
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 0 40px rgba(184, 255, 79, 0.45);
+  animation: glow 1.6s ease-in-out infinite;
+}
+.clue-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text);
+  padding: 0.7rem 0.9rem;
+  font: 800 1.1rem var(--display);
+  font-style: italic;
+  cursor: pointer;
+}
+.clue-count {
+  margin-left: auto;
+  font: 600 0.72rem var(--mono);
+  font-style: normal;
+  color: var(--accent);
+  background: rgba(184, 255, 79, 0.12);
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+}
+.chev {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.clue-body {
+  overflow-y: auto;
+  padding: 0 0.7rem 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+}
+.clue-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+}
+.clue-label {
+  font: 700 0.68rem var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+.clue-value {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.found-signs {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.found-signs li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  background: #1d5fbf;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.found-text {
+  font-weight: 700;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+/* 🔍 markers on the map */
+.clue-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  background: rgba(255, 209, 102, 0.95);
+  border: 2px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  position: relative;
+}
+.clue-pin:not(.found)::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 209, 102, 0.9);
+  animation: ring 1.8s ease-out infinite;
+}
+.clue-pin.found {
+  background: #1d5fbf;
+}
+.sign-popup .leaflet-popup-content-wrapper {
+  background: #1d5fbf;
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.sign-popup .leaflet-popup-tip {
+  background: #fff;
+}
+.sign-popup .leaflet-popup-content {
+  margin: 0.6rem 0.9rem;
+}
+.sign-kind {
+  font: 700 0.65rem var(--mono);
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 0.2rem;
+}
+.sign-text {
+  font: 800 1.25rem var(--font);
+  line-height: 1.2;
+  max-width: 260px;
+}
+
+.music-btn {
+  position: absolute;
+  z-index: 550;
+  left: 14px;
+  bottom: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(7, 11, 18, 0.85);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .clue-panel {
+    top: 120px;
+    left: 12px;
+    width: min(280px, calc(100vw - 24px));
+    max-height: 45%;
   }
 }
