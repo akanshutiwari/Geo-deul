@@ -20,7 +20,7 @@ import {
 } from "@solana/web3.js";
 import idl from "../src/idl/geo_duels.json" with { type: "json" };
 import type { GeoDuels } from "../src/idl/geo_duels";
-import { GeoClient, GeoConfig, phaseOf, fromMicro } from "../src/lib/geoClient";
+import { GeoClient, GeoConfig, keypairWallet, phaseOf, fromMicro } from "../src/lib/geoClient";
 import { LOCATIONS } from "../src/lib/locations";
 
 const env = process.env;
@@ -64,7 +64,7 @@ async function waitFor<T>(label: string, fn: () => Promise<T | null | undefined 
 
 async function main() {
   const players = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
-  const clients = players.map((k) => new GeoClient(k, idl as GeoDuels, cfg));
+  const clients = players.map((k) => new GeoClient(keypairWallet(k), Keypair.generate(), idl as GeoDuels, cfg));
   const [host, alice, bob] = clients;
   const STAKE = new BN(0.05 * LAMPORTS_PER_SOL);
   const gameId = new BN(Date.now());

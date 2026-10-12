@@ -5,10 +5,10 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  SystemProgram,
   Transaction,
   TransactionInstruction,
   VersionedTransaction,
-  sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import {
@@ -100,52 +100,67 @@ export const fromMicro = (micro: number) => micro / 1e6;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const walletFrom = (keypair: Keypair) => ({
+/**
+ * Whoever plays: a browser wallet (Phantom, Solflare, …) through the wallet
+ * adapter, or a plain keypair in tests. Only `signTransaction` is required;
+ * `signMessage` is needed just to read your *own* sealed guess back.
+ */
+export interface PlayerWallet {
+  publicKey: PublicKey;
+  signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T>;
+  signMessage?(message: Uint8Array): Promise<Uint8Array>;
+}
+
+export const keypairWallet = (keypair: Keypair): PlayerWallet => ({
   publicKey: keypair.publicKey,
-  payer: keypair,
   async signTransaction<T extends Transaction | VersionedTransaction>(tx: T) {
     if (tx instanceof Transaction) tx.partialSign(keypair);
     else tx.sign([keypair]);
     return tx;
   },
-  async signAllTransactions<T extends Transaction | VersionedTransaction>(
-    txs: T[],
-  ) {
-    for (const tx of txs) {
-      if (tx instanceof Transaction) tx.partialSign(keypair);
-      else tx.sign([keypair]);
-    }
-    return txs;
+  async signMessage(message: Uint8Array) {
+    return nacl.sign.detached(message, keypair.secretKey);
   },
 });
 
+/** Lamports the session key keeps for fees + delegation rent ("game gas"). */
+export const SESSION_MIN_LAMPORTS = 6_000_000;
+export const SESSION_TOPUP_LAMPORTS = 15_000_000;
+
+type Actor = "wallet" | "session";
+
 /**
- * One client per identity: a base-layer connection plus a lazily authenticated
- * TEE connection. Every ER read goes through this identity's auth token —
- * that's what keeps the other players' guesses sealed.
+ * Client for one player. Money and identity live in the player's wallet: it
+ * signs creating/joining (stakes), starting, and locking in a guess. The
+ * permissionless plumbing — sealing the guess slot, moving the round onto the
+ * rollup, revealing, paying out — is signed by a local session key that the
+ * wallet tops up inside its own join/create transaction, so players never
+ * see a popup for those steps.
  */
 export class GeoClient {
-  readonly keypair: Keypair;
+  readonly wallet: PlayerWallet;
+  readonly session: Keypair;
   readonly cfg: GeoConfig;
   readonly base: Connection;
   readonly program: Program<GeoDuels>;
-  private tee: Connection | null = null;
-  private teeExpiry = 0;
+  private tee: Partial<Record<Actor, { conn: Connection; expiry: number }>> = {};
   private cache?: TokenCache;
 
   constructor(
-    keypair: Keypair,
+    wallet: PlayerWallet,
+    session: Keypair,
     idl: GeoDuels,
     cfg: GeoConfig,
     cache?: TokenCache,
   ) {
-    this.keypair = keypair;
+    this.wallet = wallet;
+    this.session = session;
     this.cfg = cfg;
     this.cache = cache;
     this.base = new Connection(cfg.baseEndpoint, "confirmed");
     const provider = new anchor.AnchorProvider(
       this.base,
-      walletFrom(keypair) as unknown as anchor.Wallet,
+      { publicKey: wallet.publicKey } as unknown as anchor.Wallet,
       { commitment: "confirmed" },
     );
     this.program = new Program<GeoDuels>(
@@ -154,8 +169,9 @@ export class GeoClient {
     );
   }
 
+  /** The player's identity (their wallet). */
   get publicKey() {
-    return this.keypair.publicKey;
+    return this.wallet.publicKey;
   }
 
   // ───────────── PDAs ─────────────
@@ -184,9 +200,16 @@ export class GeoClient {
 
   // ───────────── TEE auth ─────────────
 
-  async teeConn(): Promise<Connection> {
-    if (this.tee && Date.now() < this.teeExpiry - 60_000) return this.tee;
-    const key = `geo-tee-${this.cfg.teeEndpoint}-${this.publicKey.toBase58()}`;
+  /**
+   * Authenticated TEE connection. The session key's token is used for
+   * everything public; the wallet's token (one signMessage) only to read the
+   * wallet's own sealed guess.
+   */
+  async teeConn(as: Actor = "session"): Promise<Connection> {
+    const live = this.tee[as];
+    if (live && Date.now() < live.expiry - 60_000) return live.conn;
+    const who = as === "wallet" ? this.wallet.publicKey : this.session.publicKey;
+    const key = `geo-tee-${this.cfg.teeEndpoint}-${who.toBase58()}`;
     const expMs = (a: { expiresAt: number }) =>
       a.expiresAt > 1e12 ? a.expiresAt : a.expiresAt * 1000;
     let auth: { token: string; expiresAt: number } | null = null;
@@ -197,45 +220,80 @@ export class GeoClient {
       auth = null;
     }
     if (!auth || expMs(auth) - Date.now() < 60_000) {
-      auth = await getAuthToken(this.cfg.teeEndpoint, this.publicKey, (msg) =>
-        Promise.resolve(nacl.sign.detached(msg, this.keypair.secretKey)),
-      );
+      const sign =
+        as === "wallet"
+          ? (msg: Uint8Array) => {
+              if (!this.wallet.signMessage) throw new Error("This wallet can't sign messages");
+              return this.wallet.signMessage(msg);
+            }
+          : (msg: Uint8Array) => Promise.resolve(nacl.sign.detached(msg, this.session.secretKey));
+      auth = await getAuthToken(this.cfg.teeEndpoint, who, sign);
       this.cache?.set(key, JSON.stringify(auth));
     }
     const http = this.cfg.teeEndpoint.replace(/\/$/, "");
     const ws = this.cfg.teeWsEndpoint.replace(/\/$/, "");
-    this.tee = new Connection(`${http}?token=${auth.token}`, {
+    const conn = new Connection(`${http}?token=${auth.token}`, {
       wsEndpoint: `${ws}?token=${auth.token}`,
       commitment: "confirmed",
     });
-    this.teeExpiry = expMs(auth);
-    return this.tee;
+    this.tee[as] = { conn, expiry: expMs(auth) };
+    return conn;
   }
 
   // ───────────── tx helpers ─────────────
 
-  private async sendBase(ixs: TransactionInstruction[]) {
-    const tx = new Transaction().add(...ixs);
-    tx.feePayer = this.publicKey;
-    return sendAndConfirmTransaction(this.base, tx, [this.keypair], {
-      skipPreflight: true,
-      commitment: "confirmed",
-    });
+  private async signAndSend(conn: Connection, tx: Transaction, by: Actor) {
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    if (by === "session") {
+      tx.feePayer = this.session.publicKey;
+      tx.sign(this.session);
+    } else {
+      tx.feePayer = this.wallet.publicKey;
+      tx = await this.wallet.signTransaction(tx);
+    }
+    // sign-only + submit ourselves: works the same for base and rollup,
+    // whatever network the wallet itself is set to
+    const sig = await conn.sendRawTransaction(tx.serialize(), { skipPreflight: true });
+    const res = await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    if (res.value.err) throw new Error(`Transaction ${sig} failed: ${JSON.stringify(res.value.err)}`);
+    return sig;
   }
 
-  private async sendEr(ixs: TransactionInstruction[]) {
-    const conn = await this.teeConn();
-    const tx = new Transaction().add(...ixs);
-    tx.feePayer = this.publicKey;
-    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
-    return sendAndConfirmTransaction(conn, tx, [this.keypair], {
-      skipPreflight: true,
-      commitment: "confirmed",
-    });
+  private sendBase(ixs: TransactionInstruction[], by: Actor = "wallet") {
+    return this.signAndSend(this.base, new Transaction().add(...ixs), by);
+  }
+
+  private async sendEr(ixs: TransactionInstruction[], by: Actor = "session") {
+    return this.signAndSend(await this.teeConn("session"), new Transaction().add(...ixs), by);
+  }
+
+  /** Top up the session key from the wallet when it runs low (bundled into a wallet tx). */
+  async sessionTopUpIxs(): Promise<TransactionInstruction[]> {
+    const bal = await this.base.getBalance(this.session.publicKey).catch(() => 0);
+    if (bal >= SESSION_MIN_LAMPORTS) return [];
+    return [
+      SystemProgram.transfer({
+        fromPubkey: this.wallet.publicKey,
+        toPubkey: this.session.publicKey,
+        lamports: SESSION_TOPUP_LAMPORTS - bal,
+      }),
+    ];
+  }
+
+  /** Send whatever "game gas" the session key holds back to the wallet. */
+  async returnSessionFunds() {
+    const bal = await this.base.getBalance(this.session.publicKey);
+    const amount = bal - 5000;
+    if (amount <= 0) return null;
+    return this.sendBase(
+      [SystemProgram.transfer({ fromPubkey: this.session.publicKey, toPubkey: this.wallet.publicKey, lamports: amount })],
+      "session",
+    );
   }
 
   async waitUntilOnEr(pda: PublicKey, timeoutMs = 20_000) {
-    const conn = await this.teeConn();
+    const conn = await this.teeConn("session");
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const info = await conn.getAccountInfo(pda).catch(() => null);
@@ -246,13 +304,14 @@ export class GeoClient {
   }
 
   private delegateIx(
+    payer: PublicKey,
     pda: PublicKey,
     accountType: { game: { gameId: BN } } | { guess: { gameId: BN; player: PublicKey } },
   ) {
     return this.program.methods
       .delegatePda(accountType as never)
       .accountsPartial({
-        payer: this.publicKey,
+        payer,
         validator: this.cfg.validator,
         pda,
       })
@@ -278,10 +337,10 @@ export class GeoClient {
         host: this.publicKey,
       })
       .instruction();
-    const delegate = await this.delegateIx(guess, {
+    const delegate = await this.delegateIx(this.publicKey, guess, {
       guess: { gameId, player: this.publicKey },
     });
-    return this.sendBase([create, delegate]);
+    return this.sendBase([...(await this.sessionTopUpIxs()), create, delegate]);
   }
 
   /** Join a lobby, match the stake, and move my sealed Guess PDA onto the ER. */
@@ -296,10 +355,10 @@ export class GeoClient {
         player: this.publicKey,
       })
       .instruction();
-    const delegate = await this.delegateIx(guess, {
+    const delegate = await this.delegateIx(this.publicKey, guess, {
       guess: { gameId, player: this.publicKey },
     });
-    return this.sendBase([join, delegate]);
+    return this.sendBase([...(await this.sessionTopUpIxs()), join, delegate]);
   }
 
   /** ER: seal my Guess PDA — readable by me alone. Idempotent. */
@@ -313,7 +372,7 @@ export class GeoClient {
       .accountsPartial({
         permissionedAccount: guess,
         permission: permissionPdaFromAccount(guess),
-        authority: this.publicKey,
+        authority: this.session.publicKey,
         permissionProgram: PERMISSION_PROGRAM_ID,
         ephemeralVault: EPHEMERAL_VAULT_ID,
         magicProgram: MAGIC_PROGRAM_ID,
@@ -355,8 +414,8 @@ export class GeoClient {
 
   /** Base → ER: move the live game onto the rollup (once the location landed). */
   async delegateGame(gameId: BN) {
-    const ix = await this.delegateIx(this.gamePda(gameId), { game: { gameId } });
-    return this.sendBase([ix]);
+    const ix = await this.delegateIx(this.session.publicKey, this.gamePda(gameId), { game: { gameId } });
+    return this.sendBase([ix], "session");
   }
 
   /** ER: make the game account publicly readable. Idempotent. */
@@ -368,7 +427,7 @@ export class GeoClient {
       .accountsPartial({
         permissionedAccount: game,
         permission: permissionPdaFromAccount(game),
-        authority: this.publicKey,
+        authority: this.session.publicKey,
         permissionProgram: PERMISSION_PROGRAM_ID,
         ephemeralVault: EPHEMERAL_VAULT_ID,
         magicProgram: MAGIC_PROGRAM_ID,
@@ -388,13 +447,13 @@ export class GeoClient {
         player: this.publicKey,
       })
       .instruction();
-    return this.sendEr([ix]);
+    return this.sendEr([ix], "wallet");
   }
 
   private async revealTx(gameId: BN, players: PublicKey[]) {
     const tx = await this.program.methods
       .revealAndSettle()
-      .accountsPartial({ payer: this.publicKey, game: this.gamePda(gameId) })
+      .accountsPartial({ payer: this.session.publicKey, game: this.gamePda(gameId) })
       .remainingAccounts(
         players.map((p) => ({
           pubkey: this.guessPda(gameId, p),
@@ -414,16 +473,13 @@ export class GeoClient {
    * Simulates first so waiting clients never spam failing reveals.
    */
   async tryReveal(gameId: BN, players: PublicKey[]): Promise<string | null> {
-    const conn = await this.teeConn();
+    const conn = await this.teeConn("session");
     const tx = await this.revealTx(gameId, players);
-    tx.feePayer = this.publicKey;
+    tx.feePayer = this.session.publicKey;
     tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
     const sim = await conn.simulateTransaction(tx).catch(() => null);
     if (!sim || sim.value.err) return null;
-    return sendAndConfirmTransaction(conn, tx, [this.keypair], {
-      skipPreflight: true,
-      commitment: "confirmed",
-    });
+    return this.signAndSend(conn, tx, "session");
   }
 
   /** ER cleanup after the reveal: hand a guess PDA back to the base layer. */
@@ -431,7 +487,7 @@ export class GeoClient {
     const ix = await this.program.methods
       .releaseGuess()
       .accountsPartial({
-        payer: this.publicKey,
+        payer: this.session.publicKey,
         guess: this.guessPda(gameId, player),
         game: this.gamePda(gameId),
       })
@@ -447,13 +503,13 @@ export class GeoClient {
       .accountsPartial({
         game: this.gamePda(gameId),
         vault: this.vaultPda(gameId),
-        payer: this.publicKey,
+        payer: this.session.publicKey,
       })
       .remainingAccounts(
         players.map((p) => ({ pubkey: p, isSigner: false, isWritable: true })),
       )
       .instruction();
-    return this.sendBase([ix]);
+    return this.sendBase([ix], "session");
   }
 
   // ───────────── reads ─────────────
@@ -470,7 +526,7 @@ export class GeoClient {
   }
 
   async fetchGameEr(gameId: BN): Promise<GameAccount | null> {
-    const conn = await this.teeConn();
+    const conn = await this.teeConn("session");
     const info = await conn.getAccountInfo(this.gamePda(gameId));
     if (!info || !info.owner.equals(this.cfg.programId)) return null;
     return this.decodeGame(info.data);
@@ -507,7 +563,7 @@ export class GeoClient {
     gameId: BN,
     player: PublicKey,
   ): Promise<GuessAccount | null> {
-    const conn = await this.teeConn();
+    const conn = await this.teeConn("wallet");
     const info = await conn.getAccountInfo(this.guessPda(gameId, player));
     if (!info) return null;
     return this.program.coder.accounts.decode("guess", info.data) as GuessAccount;
