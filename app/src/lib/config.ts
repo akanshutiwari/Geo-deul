@@ -55,3 +55,11 @@ export const explorerTx = (sig: string) =>
   IS_LOCAL
     ? `https://explorer.solana.com/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(BASE_ENDPOINT)}`
     : `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+
+/**
+ * Rollup (ER) transactions live on the MagicBlock TEE, which only answers
+ * authenticated requests — so Solscan is pointed at our tokenized TEE RPC as a
+ * custom cluster (it opens directly, unlike Solana Explorer's RPC prompt).
+ */
+export const erExplorerTx = (sig: string, tokenizedRpc: string) =>
+  `https://solscan.io/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(tokenizedRpc)}`;

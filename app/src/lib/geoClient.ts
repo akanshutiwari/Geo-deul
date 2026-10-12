@@ -241,6 +241,11 @@ export class GeoClient {
     return conn;
   }
 
+  /** Tokenized TEE RPC URL (for explorer links to ER transactions). */
+  async erExplorerRpc(): Promise<string> {
+    return (await this.teeConn("session")).rpcEndpoint;
+  }
+
   // ───────────── tx helpers ─────────────
 
   private async signAndSend(conn: Connection, tx: Transaction, by: Actor) {
