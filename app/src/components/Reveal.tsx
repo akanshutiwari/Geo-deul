@@ -3,7 +3,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { Duel } from "../hooks/useDuel";
 import { fromMicro, isWinner } from "../lib/geoClient";
 import { LOCATIONS } from "../lib/locations";
-import { PLAYER_COLORS, formatDistance, points } from "../lib/geo";
+import { PLAYER_COLORS, formatDistance, points, speedBonus } from "../lib/geo";
 import { playerAvatar, playerName } from "../lib/identity";
 import { explorerTx } from "../lib/config";
 import { ResultMap, ResultPin } from "./maps";
@@ -44,9 +44,17 @@ export default function Reveal({ duel, onRematch }: { duel: Duel; onRematch: () 
     return () => clearTimeout(t);
   }, [iWon]);
 
+  // rank by on-chain score (distance first, speed as a bonus), closer wins ties
   const ranked = game.players
     .map((p, i) => ({ p, i }))
-    .sort((a, b) => (a.p.guessed ? a.p.distanceM : Infinity) - (b.p.guessed ? b.p.distanceM : Infinity));
+    .sort((a, b) =>
+      a.p.guessed !== b.p.guessed
+        ? Number(b.p.guessed) - Number(a.p.guessed)
+        : b.p.score - a.p.score || a.p.distanceM - b.p.distanceM,
+    );
+  const deadline = game.deadline.toNumber();
+  const secsLeft = (at: number) => Math.max(0, Math.min(game.guessSecs, deadline - at));
+  const secsTaken = (at: number) => Math.max(0, game.guessSecs - secsLeft(at));
 
   // reveal farthest first so the winner's line lands last
   const pins: ResultPin[] = [...ranked]
@@ -92,8 +100,12 @@ export default function Reveal({ duel, onRematch }: { duel: Duel; onRematch: () 
                   <span className="pname">{playerName(p.player)}</span>
                   {i === duel.myIndex && <span className="tag tag-me">you</span>}
                 </span>
-                <span className="dist mono">{p.guessed ? formatDistance(p.distanceM) : "no guess"}</span>
-                <span className="pts mono muted">{p.guessed ? `${points(p.distanceM)} pts` : ""}</span>
+                <span className="dist mono">{p.guessed ? `${p.score.toLocaleString()} pts` : "no guess"}</span>
+                <span className="pts mono muted">
+                  {p.guessed
+                    ? `${formatDistance(p.distanceM)} · ${points(p.distanceM)} + ${speedBonus(p.distanceM, secsLeft(p.guessedAt.toNumber()), game.guessSecs)} speed · ${secsTaken(p.guessedAt.toNumber())}s`
+                    : ""}
+                </span>
                 {isWinner(game, i) && stake > 0 && <span className="prize mono">+{share.toFixed(3)}</span>}
               </li>
             ))}
