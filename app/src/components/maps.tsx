@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { imageryMaxZoom } from "../lib/imagery";
+import type { SignClue } from "../lib/clues";
 
 const SATELLITE =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
@@ -39,15 +40,26 @@ export function DropView({
   lng,
   mode = "satellite",
   className = "map",
+  signs,
+  found,
+  onFind,
 }: {
   lat: number;
   lng: number;
   mode?: "satellite" | "streets";
   className?: string;
+  /** hidden clue markers to discover by exploring */
+  signs?: SignClue[];
+  found?: Set<number>;
+  onFind?: (id: number) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const home = useRef<{ zoom: number }>({ zoom: 16 });
+  const [ready, setReady] = useState(0);
+  const findRef = useRef(onFind);
+  findRef.current = onFind;
+  const openSign = useRef<number | null>(null);
 
   useEffect(() => {
     if (!el.current) return;
@@ -77,6 +89,7 @@ export function DropView({
         attribution: mode === "streets" ? "Tiles &copy; Esri" : "Imagery &copy; Esri, Maxar, Earthstar Geographics",
       }).addTo(m);
       map.current = m;
+      setReady((r) => r + 1);
       ro = new ResizeObserver(() => m?.invalidateSize());
       ro.observe(node);
     })();
@@ -87,6 +100,46 @@ export function DropView({
       map.current = null;
     };
   }, [lat, lng, mode]);
+
+  // clue markers: a pulsing 🔍 until discovered, then the sign itself
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !signs?.length) return;
+    const layer = L.layerGroup().addTo(m);
+    for (const sg of signs) {
+      const isFound = found?.has(sg.id);
+      const mk = L.marker([sg.lat, sg.lng], {
+        icon: L.divIcon({
+          className: "pin-wrap",
+          html: isFound
+            ? `<div class="clue-pin found">${sg.icon}</div>`
+            : `<div class="clue-pin"><span>🔍</span></div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        }),
+        zIndexOffset: isFound ? 0 : 500,
+      }).addTo(layer);
+      const plate = document.createElement("div");
+      plate.className = "sign-plate";
+      plate.innerHTML = `<div class="sign-kind">${sg.icon} ${sg.kind}</div><div class="sign-text"></div>`;
+      (plate.querySelector(".sign-text") as HTMLElement).textContent = sg.text; // never inject OSM text as HTML
+      mk.bindPopup(plate, { className: "sign-popup", closeButton: false, offset: [0, -10] });
+      mk.on("click", () => {
+        openSign.current = sg.id;
+        findRef.current?.(sg.id);
+      });
+      mk.on("popupclose", () => {
+        if (openSign.current === sg.id) openSign.current = null;
+      });
+      // markers are rebuilt when a sign is found — keep its plate open
+      if (openSign.current === sg.id) setTimeout(() => mk.openPopup(), 0);
+    }
+    return () => {
+      // removal closes popups; that must not count as the player closing it
+      layer.eachLayer((l) => l.off("popupclose"));
+      layer.remove();
+    };
+  }, [ready, signs, found]);
 
   return (
     <div className="map-shell">
