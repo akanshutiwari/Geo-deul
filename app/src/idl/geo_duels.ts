@@ -917,8 +917,9 @@ export type GeoDuels = {
       "name": "revealAndSettle",
       "docs": [
         "ER: once everyone has locked in (or the clock ran out) anyone can reveal.",
-        "Copies each sealed guess into the public game account, scores it, picks",
-        "the closest guess(es) as winner(s), then commits + undelegates the game",
+        "Copies each sealed guess into the public game account, scores it",
+        "(distance points + an accuracy-weighted speed bonus, see `round_score`),",
+        "picks the top score(s) as winner(s), then commits + undelegates the game",
         "back to the base layer for payout.",
         "`remaining_accounts` = guess PDAs in join order."
       ],
@@ -1501,6 +1502,13 @@ export type GeoDuels = {
           {
             "name": "guessedAt",
             "type": "i64"
+          },
+          {
+            "name": "score",
+            "docs": [
+              "Distance points + speed bonus (set at reveal)."
+            ],
+            "type": "u32"
           }
         ]
       }

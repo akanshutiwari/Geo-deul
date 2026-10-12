@@ -332,8 +332,9 @@ pub mod geo_duels {
     }
 
     /// ER: once everyone has locked in (or the clock ran out) anyone can reveal.
-    /// Copies each sealed guess into the public game account, scores it, picks
-    /// the closest guess(es) as winner(s), then commits + undelegates the game
+    /// Copies each sealed guess into the public game account, scores it
+    /// (distance points + an accuracy-weighted speed bonus, see `round_score`),
+    /// picks the top score(s) as winner(s), then commits + undelegates the game
     /// back to the base layer for payout.
     /// `remaining_accounts` = guess PDAs in join order.
     pub fn reveal_and_settle<'info>(ctx: Context<'info, RevealAndSettle<'info>>) -> Result<()> {
@@ -353,6 +354,7 @@ pub mod geo_duels {
             require_keys_eq!(info.key(), expected, GeoError::WrongPlayerAccounts);
             let guess = Guess::try_deserialize(&mut &info.try_borrow_data()?[..])?;
             let (target_lat, target_lng) = (game.target_lat, game.target_lng);
+            let (deadline, guess_secs) = (game.deadline, game.guess_secs);
             let slot = &mut game.players[i];
             if guess.submitted {
                 slot.guessed = true;
@@ -360,6 +362,8 @@ pub mod geo_duels {
                 slot.lng = guess.lng;
                 slot.distance_m = haversine_m(target_lat, target_lng, guess.lat, guess.lng);
                 slot.guessed_at = guess.submitted_at;
+                let secs_left = (deadline - guess.submitted_at).clamp(0, guess_secs as i64) as u32;
+                slot.score = round_score(slot.distance_m, secs_left, guess_secs);
             } else {
                 all_in = false;
             }
@@ -367,23 +371,25 @@ pub mod geo_duels {
         let now = Clock::get()?.unix_timestamp;
         require!(all_in || now > game.deadline, GeoError::RoundStillOpen);
 
+        // Highest score wins; ties on score go to the closer guess; a true
+        // tie (same score and distance) splits the pot.
         let best = game
             .players
             .iter()
             .filter(|p| p.guessed)
-            .map(|p| p.distance_m)
-            .min();
+            .map(|p| (p.score, std::cmp::Reverse(p.distance_m)))
+            .max();
         game.winner_mask = best.map_or(0, |best| {
             game.players
                 .iter()
                 .enumerate()
-                .filter(|(_, p)| p.guessed && p.distance_m == best)
+                .filter(|(_, p)| p.guessed && (p.score, std::cmp::Reverse(p.distance_m)) == best)
                 .fold(0u16, |mask, (i, _)| mask | (1 << i))
         });
         game.phase = Phase::Revealed;
         game.revealed_at = now;
         msg!(
-            "Geo duel {} revealed — best {:?} m, winners mask {:#b}",
+            "Geo duel {} revealed — best (score, distance) {:?}, winners mask {:#b}",
             game.game_id,
             best,
             game.winner_mask
@@ -644,9 +650,11 @@ pub struct PlayerSlot {
     pub lng: i32,
     pub distance_m: u32,
     pub guessed_at: i64,
+    /// Distance points + speed bonus (set at reveal).
+    pub score: u32,
 }
 impl PlayerSlot {
-    pub const LEN: usize = 32 + 1 + 1 + 4 + 4 + 4 + 8;
+    pub const LEN: usize = 32 + 1 + 1 + 4 + 4 + 4 + 8 + 4;
     fn new(player: Pubkey) -> Self {
         Self {
             player,
@@ -656,6 +664,7 @@ impl PlayerSlot {
             lng: 0,
             distance_m: NO_DISTANCE,
             guessed_at: 0,
+            score: 0,
         }
     }
 }
@@ -816,6 +825,21 @@ fn wrap_lng(lng: i64) -> i32 {
     l as i32
 }
 
+pub const MAX_DISTANCE_POINTS: f64 = 5000.0;
+pub const MAX_SPEED_BONUS: f64 = 500.0;
+
+/// Round score. Distance is the priority: up to 5000 points, GeoGuessr-style
+/// exponential falloff (≈ -50% every 1,035 km). Speed adds up to 500 more, but
+/// the bonus is scaled by accuracy, so a fast blind guess earns ~nothing while
+/// a fast *good* guess beats a slow one of similar distance.
+pub fn round_score(distance_m: u32, secs_left: u32, guess_secs: u32) -> u32 {
+    let accuracy = (-(distance_m as f64) / 1_492_700.0).exp();
+    let distance_pts = MAX_DISTANCE_POINTS * accuracy;
+    let speed = if guess_secs == 0 { 0.0 } else { secs_left as f64 / guess_secs as f64 };
+    let bonus = MAX_SPEED_BONUS * accuracy * speed;
+    (distance_pts + bonus).round() as u32
+}
+
 /// Great-circle distance in metres between two micro-degree coordinates.
 pub fn haversine_m(lat1: i32, lng1: i32, lat2: i32, lng2: i32) -> u32 {
     const R: f64 = 6_371_008.8;
@@ -841,6 +865,19 @@ mod tests {
         // antipodes ≈ half circumference
         let d = haversine_m(0, 0, 0, 180_000_000);
         assert!((20_000_000..20_040_000).contains(&d), "{d}");
+    }
+
+    #[test]
+    fn scoring_prefers_distance_rewards_speed() {
+        // perfect + instant = 5500, perfect + last second = 5000
+        assert_eq!(round_score(0, 60, 60), 5500);
+        assert_eq!(round_score(0, 0, 60), 5000);
+        // a fast blind guess (other side of the planet) gets almost nothing
+        assert!(round_score(15_000_000, 60, 60) < 5);
+        // close + slow beats far + fast
+        assert!(round_score(50_000, 0, 60) > round_score(800_000, 60, 60));
+        // similar distance: the faster player wins
+        assert!(round_score(100_000, 50, 60) > round_score(90_000, 5, 60));
     }
 
     #[test]

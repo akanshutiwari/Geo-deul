@@ -60,6 +60,7 @@ export interface PlayerSlot {
   lng: number;
   distanceM: number;
   guessedAt: BN;
+  score: number;
 }
 
 export interface GameAccount {
