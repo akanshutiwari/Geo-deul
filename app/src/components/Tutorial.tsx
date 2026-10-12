@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LOCATIONS } from "../lib/locations";
 import { PLAYER_COLORS, formatDistance, haversineM, points } from "../lib/geo";
-import { GuessMap, ResultMap, SatelliteView } from "./maps";
+import { ResultMap } from "./maps";
+import GuessStage from "./GuessStage";
 
 type Step = "intro" | "drop" | "pin" | "lock" | "result";
 
@@ -11,11 +12,11 @@ const COPY: Record<Step, { text: string; cta?: string }> = {
     cta: "Let's go",
   },
   drop: {
-    text: "This is your drop. In a real duel a VRF oracle picks the spot, so nobody can know it in advance. Drag and zoom the satellite view to hunt for clues: coastlines, roads, roofs, farmland, snow.",
+    text: "This is your drop, filling the whole screen. A VRF oracle picks it, so nobody can know it in advance. Use the tabs up top: Satellite, the bare Streets grid, and Photos people took around here. Hunt for clues like coastlines, road layouts, roofs, signs and vegetation.",
     cta: "Got it",
   },
   pin: {
-    text: "Think you know where this is? Click the world map to drop your pin. You can click again to move it.",
+    text: "Think you know where this is? The small map in the corner grows when you hover or tap it. Click it to drop your pin, and click again to move it. ⤢ keeps it big.",
   },
   lock: {
     text: "Happy with it? Hit Lock in. In a duel your pin is sealed inside a private rollup. Others see that you locked in, never where.",
@@ -34,13 +35,14 @@ const randomDrop = () => {
 /** Guided practice round, shown to first-time players (and from "How to play"). */
 export default function Tutorial({ onDone }: { onDone: () => void }) {
   const [round, setRound] = useState(0);
-  const drop = useMemo(randomDrop, [round]);
+  const [drop, setDrop] = useState(randomDrop);
   const [step, setStep] = useState<Step>("intro");
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const dist = pin ? haversineM(drop.lat, drop.lng, pin.lat, pin.lng) : 0;
 
   const again = () => {
     setPin(null);
+    setDrop(randomDrop());
     setRound((r) => r + 1);
     setStep("drop");
   };
@@ -64,38 +66,18 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
       </div>
 
       {step !== "result" ? (
-        <div className="round-maps tut-maps">
-          <div className={`pane ${step === "drop" ? "spot" : ""}`}>
-            <div className="pane-head">
-              <span>Where are you?</span>
-            </div>
-            <SatelliteView key={round} lat={drop.lat} lng={drop.lng} />
-          </div>
-          <div className={`pane ${step === "pin" ? "spot" : ""}`}>
-            <div className="pane-head">
-              <span>Drop your pin</span>
-              {pin && (
-                <span className="mono small muted">
-                  {pin.lat.toFixed(3)}, {pin.lng.toFixed(3)}
-                </span>
-              )}
-            </div>
-            <GuessMap
-              key={round}
-              value={pin}
-              onPick={place}
-              color={PLAYER_COLORS[0]}
-              disabled={step === "intro" || step === "drop"}
-            />
-            <button
-              className={`btn btn-primary btn-lg lock-btn ${step === "lock" ? "spot-btn" : ""}`}
-              disabled={!pin || step === "intro" || step === "drop"}
-              onClick={() => setStep("result")}
-            >
-              {pin ? "Lock in guess" : "Drop a pin first"}
-            </button>
-          </div>
-        </div>
+        <GuessStage
+          key={round}
+          target={{ lat: drop.lat, lng: drop.lng }}
+          pin={pin}
+          onPick={place}
+          pinColor={PLAYER_COLORS[0]}
+          canPin={step === "pin" || step === "lock"}
+          lockLabel={pin ? "Lock in guess" : "Place your pin on the map"}
+          canLock={!!pin && step === "lock"}
+          onLock={() => setStep("result")}
+          spot={step === "drop" ? "views" : step === "pin" ? "map" : step === "lock" ? "lock" : null}
+        />
       ) : (
         <div className="tut-result">
           <div className="pane tall">
@@ -131,7 +113,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      <div className={`coach ${step === "intro" || step === "drop" ? "" : "coach-left"}`}>
+      <div className="coach coach-left">
         <div className="coach-bubble">
           <p>{COPY[step].text}</p>
           {COPY[step].cta && (
