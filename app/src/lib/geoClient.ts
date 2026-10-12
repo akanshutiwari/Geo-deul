@@ -14,7 +14,6 @@ import nacl from "tweetnacl";
 import {
   permissionPdaFromAccount,
   getAuthToken,
-  waitUntilPermissionActive,
   AUTHORITY_FLAG,
   TX_LOGS_FLAG,
   PERMISSION_PROGRAM_ID,
@@ -321,7 +320,7 @@ export class GeoClient {
       })
       .instruction();
     const sig = await this.sendEr([ix]);
-    await waitUntilPermissionActive(this.cfg.teeEndpoint, guess);
+    await this.waitUntilOnEr(permissionPdaFromAccount(guess), 10_000).catch(() => {});
     return sig;
   }
 
