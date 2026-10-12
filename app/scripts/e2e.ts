@@ -138,7 +138,6 @@ async function main() {
 
   log("bob guess", await bob.submitGuess(gameId, target.lat + 3, target.lng - 3));
 
-  const balancesBefore = await Promise.all(clients.map((c) => c.base.getBalance(c.publicKey)));
   const revealSig = await waitFor("reveal", () => bob.tryReveal(gameId, players.map((p) => p.publicKey)), 20_000);
   log("reveal + settle", revealSig);
 
@@ -155,12 +154,18 @@ async function main() {
   );
   assert(game.winnerMask === 0b010, "alice (index 1) wins");
 
-  log("payout", await host.payout(gameId, players.map((p) => p.publicKey)));
+  const paySig = await host.payout(gameId, players.map((p) => p.publicKey));
+  log("payout", paySig);
   for (const c of clients) log("release guess", await c.releaseGuess(gameId, c.publicKey));
   const after = await host.fetchGameBase(gameId);
   assert(after && phaseOf(after) === "settled" && after.paid, "settled");
-  const balancesAfter = await Promise.all(clients.map((c) => c.base.getBalance(c.publicKey)));
-  const aliceGain = balancesAfter[1] - balancesBefore[1];
+  // Read the gain from the payout tx itself (public devnet RPCs can serve stale balances).
+  const payTx = await waitFor("payout tx", () =>
+    host.base.getTransaction(paySig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 }),
+  );
+  const keys = payTx.transaction.message.getAccountKeys().staticAccountKeys;
+  const ai = keys.findIndex((k) => k.equals(alice.publicKey));
+  const aliceGain = payTx.meta!.postBalances[ai] - payTx.meta!.preBalances[ai];
   log("alice gained", aliceGain / LAMPORTS_PER_SOL, "SOL");
   assert(aliceGain === STAKE.toNumber() * 3, "alice received the full pot");
   assert((await host.vaultBalance(gameId)) === 0, "vault drained");
