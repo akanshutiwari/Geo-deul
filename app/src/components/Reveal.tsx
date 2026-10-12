@@ -4,7 +4,7 @@ import type { Duel } from "../hooks/useDuel";
 import { fromMicro, isWinner } from "../lib/geoClient";
 import { LOCATIONS } from "../lib/locations";
 import { PLAYER_COLORS, formatDistance, points } from "../lib/geo";
-import { shortKey } from "../lib/wallet";
+import { playerAvatar, playerName } from "../lib/identity";
 import { explorerTx } from "../lib/config";
 import { ResultMap, ResultPin } from "./maps";
 
@@ -86,10 +86,10 @@ export default function Reveal({ duel, onRematch }: { duel: Duel; onRematch: () 
               <li key={p.player.toBase58()} className={`${isWinner(game, i) ? "win" : ""} ${i === duel.myIndex ? "me" : ""}`}>
                 <span className="rank mono">{rank + 1}</span>
                 <span className="avatar" style={{ background: PLAYER_COLORS[i] }}>
-                  {i + 1}
+                  {playerAvatar(p.player)}
                 </span>
                 <span className="who">
-                  <span className="mono">{shortKey(p.player)}</span>
+                  <span className="pname">{playerName(p.player)}</span>
                   {i === duel.myIndex && <span className="tag tag-me">you</span>}
                 </span>
                 <span className="dist mono">{p.guessed ? formatDistance(p.distanceM) : "no guess"}</span>

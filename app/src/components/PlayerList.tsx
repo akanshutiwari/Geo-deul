@@ -1,6 +1,6 @@
 import type { GameAccount } from "../lib/geoClient";
 import { PLAYER_COLORS } from "../lib/geo";
-import { shortKey } from "../lib/wallet";
+import { playerAvatar, playerName } from "../lib/identity";
 
 /** Roster with live lock-in badges — shows *who* locked in, never *where*. */
 export default function PlayerList({
@@ -18,9 +18,9 @@ export default function PlayerList({
       {game.players.map((p, i) => (
         <li key={p.player.toBase58()} className={i === myIndex ? "me" : ""}>
           <span className="avatar" style={{ background: PLAYER_COLORS[i] }}>
-            {i + 1}
+            {playerAvatar(p.player)}
           </span>
-          <span className="mono">{shortKey(p.player)}</span>
+          <span className="pname">{playerName(p.player)}</span>
           {i === 0 && <span className="tag">host</span>}
           {i === myIndex && <span className="tag tag-me">you</span>}
           {showLocks && (
