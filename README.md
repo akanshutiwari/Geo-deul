@@ -25,7 +25,8 @@ Program (devnet): `2Cju35ZeK1ZV5VZnn99LFS7tt8Vh3rkBQG6TZYirz5Et`
 - **Live sealed lock-ins**: you can see who has committed, but never where.
 - **Satellite drop, no API keys**: Esri World Imagery, with zoom and panning limited to a small box so you can't just zoom out to the coastline. Street View shows up as an extra tab if you set `VITE_GOOGLE_MAPS_KEY`.
 - **Self-driving rounds**: every client runs whichever permissionless step comes next (delegate, publish, reveal, pay). The game finishes even if the host closes the tab.
-- **Popup-free play**: a burner wallet signs every move. You fund it with the faucet or top it up and cash out with Phantom/Solflare.
+- **Play from your own wallet**: connect Phantom, Solflare, Backpack, or any Wallet Standard wallet. Your stake leaves your wallet and winnings land back in it. You only approve three things: create/join, start, and lock in. Everything else (sealing your slot, moving the round to the rollup, reveal, payout) is signed by a small per-wallet session key ("game gas"). Your join transaction tops it up automatically, and you can send it back from the wallet menu.
+- **First-time guide**: a practice round coached by Atlas walks new players through the drop, the pin, the lock-in, and scoring. No stake is involved.
 
 ## Lifecycle
 
@@ -63,7 +64,9 @@ Toolchain: Anchor 1.0.2, Solana CLI, Node 22+, and Yarn. For local runs you also
 cd app && yarn && yarn dev        # http://localhost:5173
 ```
 
-Fund the burner using the wallet chip at the top right. To play several seats from one browser, add `?seat=2`, `?seat=3`, … to the URL so each tab gets its own burner.
+Connect a wallet that holds devnet SOL. Wallets only *sign* here, and the app submits the transaction itself, so it lands on devnet whatever network the wallet is set to.
+
+Developer shortcut: `?guest=a`, `?guest=b`, … plays from a local test keypair instead of a wallet. The wallet menu then shows a dev airdrop button, which lets you drive several seats from one browser on the local cluster.
 
 ### Local cluster
 
