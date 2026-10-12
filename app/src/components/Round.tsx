@@ -2,15 +2,13 @@ import { useState } from "react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { Duel } from "../hooks/useDuel";
 import { fromMicro } from "../lib/geoClient";
-import { GOOGLE_MAPS_KEY } from "../lib/config";
 import { PLAYER_COLORS } from "../lib/geo";
-import { GuessMap, SatelliteView } from "./maps";
-import PlayerList from "./PlayerList";
+import { playerAvatar, playerName } from "../lib/identity";
+import GuessStage from "./GuessStage";
 
 export default function Round({ duel }: { duel: Duel }) {
   const game = duel.game!;
   const [pick, setPick] = useState<{ lat: number; lng: number } | null>(duel.myGuess);
-  const [view, setView] = useState<"sat" | "street">("sat");
   const target = { lat: fromMicro(game.targetLat), lng: fromMicro(game.targetLng) };
   const locked = !!duel.myGuess || (duel.myIndex >= 0 && game.players[duel.myIndex].locked);
   const total = game.guessSecs + 6;
@@ -20,79 +18,65 @@ export default function Round({ duel }: { duel: Duel }) {
   const lockedCount = game.players.filter((p) => p.locked).length;
   const timeUp = duel.timeLeft <= 0;
 
-  return (
-    <div className="round">
-      <div className="round-bar">
-        <div className={`timer${urgent ? " urgent" : ""}`} style={{ ["--p" as string]: pct }}>
+  const lockLabel = !duel.joined
+    ? "Spectating"
+    : locked
+      ? "🔒 Locked in — waiting for others"
+      : duel.busy === "Locking in"
+        ? "Confirm in your wallet…"
+        : timeUp
+          ? "Time's up"
+          : pick
+            ? "Lock in guess"
+            : "Place your pin on the map";
+
+  const hud = (
+    <>
+      <div className="hud-top">
+        <div className={`timer timer-sm${urgent ? " urgent" : ""}`} style={{ ["--p" as string]: pct }}>
           <span className="mono">{Math.ceil(duel.timeLeft)}</span>
         </div>
-        <div className="round-meta">
-          <div className="mono big">{pot.toFixed(3)} SOL pot</div>
-          <div className="muted small">
-            {lockedCount}/{game.players.length} locked in · guesses sealed in the TEE
+        <div>
+          <div className="mono hud-pot">{pot.toFixed(3)} SOL pot</div>
+          <div className="hud-sub">
+            {lockedCount}/{game.players.length} locked in · sealed in the TEE
           </div>
-        </div>
-        <PlayerList game={game} myIndex={duel.myIndex} showLocks />
-      </div>
-
-      <div className="round-maps">
-        <div className="pane">
-          <div className="pane-head">
-            <span>Where are you?</span>
-            {GOOGLE_MAPS_KEY && (
-              <div className="seg seg-sm">
-                <button className={view === "sat" ? "on" : ""} onClick={() => setView("sat")}>
-                  Satellite
-                </button>
-                <button className={view === "street" ? "on" : ""} onClick={() => setView("street")}>
-                  Street View
-                </button>
-              </div>
-            )}
-          </div>
-          {view === "street" && GOOGLE_MAPS_KEY ? (
-            <iframe
-              className="map"
-              title="Street View"
-              src={`https://www.google.com/maps/embed/v1/streetview?key=${GOOGLE_MAPS_KEY}&location=${target.lat},${target.lng}&radius=5000&fov=90`}
-              allowFullScreen
-            />
-          ) : (
-            <SatelliteView lat={target.lat} lng={target.lng} />
-          )}
-        </div>
-
-        <div className="pane">
-          <div className="pane-head">
-            <span>{locked ? "Your sealed guess" : duel.joined ? "Click the map to drop your pin" : "Spectating"}</span>
-            {pick && <span className="mono small muted">{pick.lat.toFixed(3)}, {pick.lng.toFixed(3)}</span>}
-          </div>
-          <GuessMap
-            value={pick}
-            onPick={setPick}
-            color={PLAYER_COLORS[Math.max(0, duel.myIndex)]}
-            disabled={locked || !duel.joined || timeUp}
-          />
-          {duel.joined && (
-            <button
-              className="btn btn-primary btn-lg lock-btn"
-              disabled={!pick || locked || !!duel.busy || timeUp}
-              onClick={() => pick && duel.submitGuess(pick.lat, pick.lng)}
-            >
-              {locked
-                ? "🔒 Locked in — waiting for the others"
-                : duel.busy === "Locking in"
-                  ? "Confirm in your wallet…"
-                  : timeUp
-                    ? "Time's up"
-                    : pick
-                      ? "Lock in guess"
-                      : "Drop a pin first"}
-            </button>
-          )}
         </div>
       </div>
+      <ul className="hud-players">
+        {game.players.map((pl, i) => (
+          <li key={pl.player.toBase58()} className={pl.locked ? "locked" : ""}>
+            <span className="avatar" style={{ background: PLAYER_COLORS[i] }}>
+              {playerAvatar(pl.player)}
+            </span>
+            <span className="pname">
+              {playerName(pl.player)}
+              {i === duel.myIndex && " (you)"}
+            </span>
+            <span className="lock-ico">{pl.locked ? "🔒" : "…"}</span>
+          </li>
+        ))}
+      </ul>
       {(duel.allLocked || timeUp) && <div className="reveal-banner">Revealing sealed guesses…</div>}
-    </div>
+      {duel.error && (
+        <div className="toast" onClick={duel.clearError}>
+          {duel.error}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <GuessStage
+      target={target}
+      pin={pick}
+      onPick={setPick}
+      pinColor={PLAYER_COLORS[Math.max(0, duel.myIndex)]}
+      canPin={duel.joined && !locked && !timeUp}
+      lockLabel={lockLabel}
+      canLock={duel.joined && !!pick && !locked && !duel.busy && !timeUp}
+      onLock={() => pick && duel.submitGuess(pick.lat, pick.lng)}
+      hud={hud}
+    />
   );
 }

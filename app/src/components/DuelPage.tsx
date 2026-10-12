@@ -36,7 +36,8 @@ export default function DuelPage({
       </div>
     );
   else if (duel.phase === "lobby" || duel.phase === "locating") body = <Lobby duel={duel} code={code} balance={balance} />;
-  else if (duel.phase === "guessing") body = <Round duel={duel} />;
+  // the round takes over the whole screen
+  else if (duel.phase === "guessing") return <Round duel={duel} />;
   else if (duel.phase === "cancelled")
     body = (
       <div className="center card narrow">
