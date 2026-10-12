@@ -20,12 +20,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -115.1728
   },
   {
-    "name": "Grand Canyon",
-    "country": "USA",
-    "lat": 36.0544,
-    "lng": -112.1401
-  },
-  {
     "name": "Miami Beach",
     "country": "USA",
     "lat": 25.7907,
@@ -36,18 +30,6 @@ export const LOCATIONS: PoolLocation[] = [
     "country": "USA",
     "lat": 41.8826,
     "lng": -87.6233
-  },
-  {
-    "name": "Monument Valley",
-    "country": "USA",
-    "lat": 36.998,
-    "lng": -110.0985
-  },
-  {
-    "name": "Honolulu, Oahu",
-    "country": "USA",
-    "lat": 21.2766,
-    "lng": -157.8278
   },
   {
     "name": "Anchorage",
@@ -74,12 +56,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -123.1207
   },
   {
-    "name": "Banff, Alberta",
-    "country": "Canada",
-    "lat": 51.1784,
-    "lng": -115.5708
-  },
-  {
     "name": "Quebec City",
     "country": "Canada",
     "lat": 46.8123,
@@ -92,28 +68,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -99.1332
   },
   {
-    "name": "Cancún",
-    "country": "Mexico",
-    "lat": 21.1619,
-    "lng": -86.8515
-  },
-  {
-    "name": "Chichén Itzá",
-    "country": "Mexico",
-    "lat": 20.6843,
-    "lng": -88.5678
-  },
-  {
     "name": "Havana",
     "country": "Cuba",
     "lat": 23.1136,
     "lng": -82.3666
-  },
-  {
-    "name": "Panama Canal, Miraflores",
-    "country": "Panama",
-    "lat": 9.0167,
-    "lng": -79.5917
   },
   {
     "name": "Bogotá",
@@ -128,18 +86,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -72.545
   },
   {
-    "name": "Lima",
-    "country": "Peru",
-    "lat": -12.0464,
-    "lng": -77.0428
-  },
-  {
-    "name": "Salar de Uyuni",
-    "country": "Bolivia",
-    "lat": -20.1338,
-    "lng": -67.4891
-  },
-  {
     "name": "Rio de Janeiro",
     "country": "Brazil",
     "lat": -22.9519,
@@ -152,34 +98,16 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -47.8645
   },
   {
-    "name": "Manaus, Amazon",
-    "country": "Brazil",
-    "lat": -3.119,
-    "lng": -60.0217
-  },
-  {
     "name": "Buenos Aires",
     "country": "Argentina",
     "lat": -34.6037,
     "lng": -58.3816
   },
   {
-    "name": "Perito Moreno Glacier",
-    "country": "Argentina",
-    "lat": -50.4967,
-    "lng": -73.1377
-  },
-  {
     "name": "Santiago",
     "country": "Chile",
     "lat": -33.4489,
     "lng": -70.6693
-  },
-  {
-    "name": "Atacama Desert",
-    "country": "Chile",
-    "lat": -22.9087,
-    "lng": -68.1997
   },
   {
     "name": "Reykjavík",
@@ -278,12 +206,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -9.1355
   },
   {
-    "name": "Santorini",
-    "country": "Greece",
-    "lat": 36.4618,
-    "lng": 25.3753
-  },
-  {
     "name": "Athens",
     "country": "Greece",
     "lat": 37.9715,
@@ -312,12 +234,6 @@ export const LOCATIONS: PoolLocation[] = [
     "country": "Sweden",
     "lat": 59.3251,
     "lng": 18.0711
-  },
-  {
-    "name": "Geirangerfjord",
-    "country": "Norway",
-    "lat": 62.1049,
-    "lng": 7.094
   },
   {
     "name": "Helsinki",
@@ -350,18 +266,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 34.8289
   },
   {
-    "name": "Cairo, Giza Pyramids",
-    "country": "Egypt",
-    "lat": 29.9792,
-    "lng": 31.1342
-  },
-  {
-    "name": "Luxor",
-    "country": "Egypt",
-    "lat": 25.7188,
-    "lng": 32.6573
-  },
-  {
     "name": "Marrakesh",
     "country": "Morocco",
     "lat": 31.6258,
@@ -374,28 +278,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": -3.9725
   },
   {
-    "name": "Lagos",
-    "country": "Nigeria",
-    "lat": 6.4541,
-    "lng": 3.3947
-  },
-  {
     "name": "Nairobi",
     "country": "Kenya",
     "lat": -1.2864,
     "lng": 36.8172
-  },
-  {
-    "name": "Serengeti",
-    "country": "Tanzania",
-    "lat": -2.3333,
-    "lng": 34.8333
-  },
-  {
-    "name": "Kilimanjaro",
-    "country": "Tanzania",
-    "lat": -3.0674,
-    "lng": 37.3556
   },
   {
     "name": "Cape Town",
@@ -404,40 +290,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 18.4241
   },
   {
-    "name": "Victoria Falls",
-    "country": "Zimbabwe",
-    "lat": -17.9243,
-    "lng": 25.8572
-  },
-  {
-    "name": "Okavango Delta",
-    "country": "Botswana",
-    "lat": -19.2833,
-    "lng": 22.9
-  },
-  {
-    "name": "Sossusvlei",
-    "country": "Namibia",
-    "lat": -24.7275,
-    "lng": 15.3428
-  },
-  {
     "name": "Antananarivo",
     "country": "Madagascar",
     "lat": -18.8792,
     "lng": 47.5079
-  },
-  {
-    "name": "Dubai, Palm Jumeirah",
-    "country": "UAE",
-    "lat": 25.1124,
-    "lng": 55.139
-  },
-  {
-    "name": "Petra",
-    "country": "Jordan",
-    "lat": 30.3285,
-    "lng": 35.4444
   },
   {
     "name": "Jerusalem",
@@ -452,12 +308,6 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 39.8262
   },
   {
-    "name": "Tehran",
-    "country": "Iran",
-    "lat": 35.6892,
-    "lng": 51.389
-  },
-  {
     "name": "Mumbai",
     "country": "India",
     "lat": 18.922,
@@ -470,28 +320,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 78.0421
   },
   {
-    "name": "Varanasi",
-    "country": "India",
-    "lat": 25.3109,
-    "lng": 83.0107
-  },
-  {
     "name": "Kathmandu",
     "country": "Nepal",
     "lat": 27.7172,
     "lng": 85.324
-  },
-  {
-    "name": "Mount Everest",
-    "country": "Nepal",
-    "lat": 27.9881,
-    "lng": 86.925
-  },
-  {
-    "name": "Malé",
-    "country": "Maldives",
-    "lat": 4.1755,
-    "lng": 73.5093
   },
   {
     "name": "Bangkok",
@@ -506,22 +338,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 103.867
   },
   {
-    "name": "Ha Long Bay",
-    "country": "Vietnam",
-    "lat": 20.9101,
-    "lng": 107.1839
-  },
-  {
     "name": "Singapore, Marina Bay",
     "country": "Singapore",
     "lat": 1.2834,
     "lng": 103.8607
-  },
-  {
-    "name": "Bali, Tegallalang",
-    "country": "Indonesia",
-    "lat": -8.4325,
-    "lng": 115.2792
   },
   {
     "name": "Manila",
@@ -536,22 +356,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 114.1628
   },
   {
-    "name": "Shanghai, The Bund",
-    "country": "China",
-    "lat": 31.24,
-    "lng": 121.49
-  },
-  {
     "name": "Beijing, Forbidden City",
     "country": "China",
     "lat": 39.9163,
     "lng": 116.3972
-  },
-  {
-    "name": "Great Wall, Mutianyu",
-    "country": "China",
-    "lat": 40.4319,
-    "lng": 116.5704
   },
   {
     "name": "Guilin, Li River",
@@ -584,28 +392,10 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 135.7727
   },
   {
-    "name": "Ulaanbaatar",
-    "country": "Mongolia",
-    "lat": 47.8864,
-    "lng": 106.9057
-  },
-  {
     "name": "Sydney Opera House",
     "country": "Australia",
     "lat": -33.8568,
     "lng": 151.2153
-  },
-  {
-    "name": "Uluru",
-    "country": "Australia",
-    "lat": -25.3444,
-    "lng": 131.0369
-  },
-  {
-    "name": "Great Barrier Reef, Whitsundays",
-    "country": "Australia",
-    "lat": -20.282,
-    "lng": 149.039
   },
   {
     "name": "Melbourne",
@@ -626,39 +416,249 @@ export const LOCATIONS: PoolLocation[] = [
     "lng": 174.7633
   },
   {
-    "name": "Milford Sound",
-    "country": "New Zealand",
-    "lat": -44.6414,
-    "lng": 167.8974
-  },
-  {
-    "name": "Bora Bora",
-    "country": "French Polynesia",
-    "lat": -16.5004,
-    "lng": -151.7415
-  },
-  {
-    "name": "Svalbard, Longyearbyen",
-    "country": "Norway",
-    "lat": 78.2232,
-    "lng": 15.6267
-  },
-  {
-    "name": "Nuuk",
-    "country": "Greenland",
-    "lat": 64.1814,
-    "lng": -51.6941
-  },
-  {
-    "name": "McMurdo Station",
-    "country": "Antarctica",
-    "lat": -77.8419,
-    "lng": 166.6863
-  },
-  {
     "name": "Galápagos, Santa Cruz",
     "country": "Ecuador",
     "lat": -0.7393,
     "lng": -90.3138
+  },
+  {
+    "name": "Bordeaux",
+    "country": "France",
+    "lat": 44.8378,
+    "lng": -0.5792
+  },
+  {
+    "name": "Strasbourg",
+    "country": "France",
+    "lat": 48.5734,
+    "lng": 7.7521
+  },
+  {
+    "name": "Frankfurt",
+    "country": "Germany",
+    "lat": 50.1109,
+    "lng": 8.6821
+  },
+  {
+    "name": "Austin",
+    "country": "USA",
+    "lat": 30.2672,
+    "lng": -97.7431
+  },
+  {
+    "name": "Istanbul, Kadıköy",
+    "country": "Türkiye",
+    "lat": 40.9903,
+    "lng": 29.0294
+  },
+  {
+    "name": "Nouméa",
+    "country": "New Caledonia",
+    "lat": -22.2758,
+    "lng": 166.458
+  },
+  {
+    "name": "Saint-Denis",
+    "country": "Réunion",
+    "lat": -20.8823,
+    "lng": 55.4504
+  },
+  {
+    "name": "Cayenne",
+    "country": "French Guiana",
+    "lat": 4.9224,
+    "lng": -52.3135
+  },
+  {
+    "name": "Papeete",
+    "country": "French Polynesia",
+    "lat": -17.5516,
+    "lng": -149.5585
+  },
+  {
+    "name": "Salzburg",
+    "country": "Austria",
+    "lat": 47.8095,
+    "lng": 13.055
+  },
+  {
+    "name": "Madrid",
+    "country": "Spain",
+    "lat": 40.4168,
+    "lng": -3.7038
+  },
+  {
+    "name": "Turin",
+    "country": "Italy",
+    "lat": 45.0703,
+    "lng": 7.6869
+  },
+  {
+    "name": "Marseille",
+    "country": "France",
+    "lat": 43.2965,
+    "lng": 5.3698
+  },
+  {
+    "name": "Brussels",
+    "country": "Belgium",
+    "lat": 50.8466,
+    "lng": 4.3528
+  },
+  {
+    "name": "Portland",
+    "country": "USA",
+    "lat": 45.5152,
+    "lng": -122.6784
+  },
+  {
+    "name": "Seattle",
+    "country": "USA",
+    "lat": 47.6062,
+    "lng": -122.3321
+  },
+  {
+    "name": "Taipei",
+    "country": "Taiwan",
+    "lat": 25.033,
+    "lng": 121.5654
+  },
+  {
+    "name": "Munich",
+    "country": "Germany",
+    "lat": 48.1374,
+    "lng": 11.5755
+  },
+  {
+    "name": "Florence",
+    "country": "Italy",
+    "lat": 43.7696,
+    "lng": 11.2558
+  },
+  {
+    "name": "Lyon",
+    "country": "France",
+    "lat": 45.764,
+    "lng": 4.8357
+  },
+  {
+    "name": "Hamburg",
+    "country": "Germany",
+    "lat": 53.5511,
+    "lng": 9.9937
+  },
+  {
+    "name": "Vienna",
+    "country": "Austria",
+    "lat": 48.2082,
+    "lng": 16.3738
+  },
+  {
+    "name": "Ljubljana",
+    "country": "Slovenia",
+    "lat": 46.0569,
+    "lng": 14.5058
+  },
+  {
+    "name": "Warsaw",
+    "country": "Poland",
+    "lat": 52.2297,
+    "lng": 21.0122
+  },
+  {
+    "name": "Copenhagen",
+    "country": "Denmark",
+    "lat": 55.6761,
+    "lng": 12.5683
+  },
+  {
+    "name": "Oslo",
+    "country": "Norway",
+    "lat": 59.9139,
+    "lng": 10.7522
+  },
+  {
+    "name": "Tallinn",
+    "country": "Estonia",
+    "lat": 59.437,
+    "lng": 24.7536
+  },
+  {
+    "name": "Riga",
+    "country": "Latvia",
+    "lat": 56.9496,
+    "lng": 24.1052
+  },
+  {
+    "name": "Porto",
+    "country": "Portugal",
+    "lat": 41.1579,
+    "lng": -8.6291
+  },
+  {
+    "name": "Milan",
+    "country": "Italy",
+    "lat": 45.4642,
+    "lng": 9.19
+  },
+  {
+    "name": "Bucharest",
+    "country": "Romania",
+    "lat": 44.4268,
+    "lng": 26.1025
+  },
+  {
+    "name": "Tbilisi",
+    "country": "Georgia",
+    "lat": 41.7151,
+    "lng": 44.8271
+  },
+  {
+    "name": "Washington DC",
+    "country": "USA",
+    "lat": 38.9072,
+    "lng": -77.0369
+  },
+  {
+    "name": "Medellín",
+    "country": "Colombia",
+    "lat": 6.2442,
+    "lng": -75.5812
+  },
+  {
+    "name": "Delhi",
+    "country": "India",
+    "lat": 28.6139,
+    "lng": 77.209
+  },
+  {
+    "name": "Bengaluru",
+    "country": "India",
+    "lat": 12.9716,
+    "lng": 77.5946
+  },
+  {
+    "name": "Wellington",
+    "country": "New Zealand",
+    "lat": -41.2865,
+    "lng": 174.7762
+  },
+  {
+    "name": "Montreal",
+    "country": "Canada",
+    "lat": 45.5017,
+    "lng": -73.5673
+  },
+  {
+    "name": "Osaka",
+    "country": "Japan",
+    "lat": 34.6937,
+    "lng": 135.5023
+  },
+  {
+    "name": "Kampala",
+    "country": "Uganda",
+    "lat": 0.3476,
+    "lng": 32.5825
   }
 ];

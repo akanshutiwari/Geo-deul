@@ -38,7 +38,7 @@ const WEATHER: Record<number, string> = {
 // countries in the drop pool that drive on the left
 const LEFT_DRIVING = new Set([
   "UK", "Ireland", "Japan", "Australia", "New Zealand", "South Africa", "Kenya", "Tanzania", "Zimbabwe", "Botswana",
-  "Namibia", "India", "Nepal", "Thailand", "Indonesia", "Malaysia", "Singapore", "Maldives",
+  "Namibia", "Uganda", "India", "Nepal", "Thailand", "Indonesia", "Malaysia", "Singapore", "Maldives",
 ]);
 
 export const drivesOnLeft = (country: string, name: string) => LEFT_DRIVING.has(country) || /hong kong/i.test(name);
