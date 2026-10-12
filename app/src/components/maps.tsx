@@ -130,8 +130,9 @@ export function GuessMap({
   }, [value, color]);
 
   return (
-    <div className="map-shell">
-      <div ref={el} className={`map guess-map${disabled ? " is-locked" : ""}`} />
+    // the locked state lives on the wrapper: Leaflet owns the map div's classes
+    <div className={`map-shell${disabled ? " is-locked" : ""}`}>
+      <div ref={el} className="map guess-map" />
     </div>
   );
 }
